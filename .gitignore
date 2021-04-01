@@ -1,5 +1,7 @@
 # Manual adds
 .idea/
+*.map
+*.css
 
 # Byte-compiled / optimized / DLL files
 __pycache__/
