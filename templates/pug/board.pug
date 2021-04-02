@@ -7,9 +7,16 @@
           div.board-tile.white(id= "board-tile-" + letters[i] + str(pos))
         else
           div.board-tile.black(id= "board-tile-" + letters[i] + str(pos))
+            if pos > 5
+              .piece.ai-piece
+            elif pos == 2
+              .piece.player-piece
       else
         if i % 2 == 0
           div.board-tile.black(id= "board-tile-" + letters[i] + str(pos))
-            .piece.red
+            if pos == 7
+              .piece.ai-piece
+            elif pos < 4
+              .piece.player-piece
         else
           div.board-tile.white(id= "board-tile-" + letters[i] + str(pos))
