@@ -7,6 +7,7 @@
           div.board-tile.white(id= "board-tile-"+letters[i] + str(pos))
         else
           div.board-tile.black(id= "board-tile-" + letters[i] + str(pos))
+            .piece
       else
         if i % 2 == 0
           div.board-tile.black(id= "board-tile-" + letters[i] + str(pos))
