@@ -4,10 +4,10 @@
     - for i in range(dims)
       if pos%2 == 0
         if i%2 == 0
-          div.board-tile.white(id= "board-tile-"+letters[i] + str(pos))
+          div.board-tile.white(id= "board-tile-" + letters[i] + str(pos))
         else
           div.board-tile.black(id= "board-tile-" + letters[i] + str(pos))
-            .piece
+            .piece.blue
       else
         if i % 2 == 0
           div.board-tile.black(id= "board-tile-" + letters[i] + str(pos))
