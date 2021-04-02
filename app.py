@@ -21,9 +21,12 @@ def index():
     return flask.render_template("index.pug")
 
 
-@app.route("/play", methods=["GET"])
+@app.route("/play", methods=["GET", "POST"])
 def play():
-    return flask.render_template("checkers.pug", letters="abcdefgh", str=str)
+    if flask.request.method == "GET":
+        return flask.render_template("checkers.pug", letters="abcdefgh", str=str)
+    else:
+        return flask.request.form
 
 
 if __name__ == "__main__":

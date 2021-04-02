@@ -2,11 +2,39 @@
 html(lang="en")
   head
     title Checkers
+    link(rel="stylesheet", href="/static/css/style.css", type="text/css")
     link(rel="stylesheet", href="/static/css/checkers.css", type="text/css")
   body
     .wrapper
       .container-flex
+        .box
+          table.scores
+            tr
+              th Player
+              th Wins
+              th Losses
+              th Draws
+            tr
+              td You
+              td#player-wins 0
+              td#player-losses 0
+              td#player-draws 0
+            tr
+              td AI
+              td#ai-wins 0
+              td#ai-losses 0
+              td#ai-draws 0
       .container-flex
-            .board-layout
-              include board.pug
+        .board-layout
+          include board.pug
       .container-flex
+        h1.turn Turn: It is your turn
+        form(method="POST")
+          h3 Restart the game?
+          .container
+            input#first-player(type="radio", value="first" name="player-choice" checked)
+            label(for="first-player") Play as Red
+          .container
+            input#second-player(type="radio", value="second" name="player-choice")
+            label(for="second-player") Play as Blue
+          input(type="submit", value="Restart")
