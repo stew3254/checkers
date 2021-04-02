@@ -18,7 +18,7 @@ app.wsgi_app = SassMiddleware(app.wsgi_app, {
 
 @app.route("/", methods=["GET"])
 def index():
-    return flask.render_template("index.pug")
+    return flask.render_template("index.pug", letters="abcdefgh", str=str)
 
 
 if __name__ == "__main__":
