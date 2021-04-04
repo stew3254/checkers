@@ -2,3 +2,4 @@ flask
 pypugjs
 jinja2
 libsass
+sqlalchemy

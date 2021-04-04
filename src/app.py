@@ -1,5 +1,6 @@
 import flask
 import jinja2
+import sqlalchemy as sqla
 from sassutils.wsgi import SassMiddleware
 
 # Create the flask app
@@ -14,6 +15,9 @@ app.wsgi_app = SassMiddleware(app.wsgi_app, {
             'strip_extension': True,
             },
 })
+engine = sqla.create_engine("sqlite:///checkers.db")
+conn = engine.connect()
+metadata = sqla.MetaData()
 
 
 @app.route("/", methods=["GET"])
