@@ -1,0 +1,13 @@
+version: "3"
+services:
+  web:
+    build: .
+    dns:
+      - 8.8.8.8
+      - 8.8.4.4
+    container_name: checkers
+    ports:
+      - "5000:5000"
+    volumes:
+      - ./.:/srv/checkers
+    restart: on-failure
