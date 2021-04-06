@@ -1,7 +1,9 @@
 import flask
 import jinja2
 import sqlalchemy as sqla
+from sqlalchemy.orm import sessionmaker, scoped_session
 from sassutils.wsgi import SassMiddleware
+from models import *
 
 # Create the flask app
 app = flask.Flask(__name__)
@@ -15,9 +17,10 @@ app.wsgi_app = SassMiddleware(app.wsgi_app, {
             'strip_extension': True,
             },
 })
-engine = sqla.create_engine("sqlite:///checkers.db")
+engine = sqla.create_engine("sqlite://checkers.db")
 conn = engine.connect()
-metadata = sqla.MetaData()
+Base.metadata.create_all(engine)
+session = scoped_session(sessionmaker(bind=engine, autoflush=False, autocommit=False))()
 
 
 @app.route("/", methods=["GET"])
@@ -35,3 +38,4 @@ def play():
 
 if __name__ == "__main__":
     app.run()
+    session.close()
