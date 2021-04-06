@@ -1,13 +1,13 @@
 mixin place_piece(pos, pieces)
-  - piece = pieces[pos]
-  if piece is not None
+  - var piece = pieces[pos]
+  if piece != None
       if piece.owner == "ai"
-        if piece.is_king()
+        if piece.king
           .piece.ai_piece.king_piece
         else
           .piece.ai_piece
       elif piece.owner == "player"
-        if piece.is_king()
+        if piece.king
           .piece.player_piece.king_piece
         else
           .piece.player_piece
