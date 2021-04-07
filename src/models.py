@@ -12,16 +12,18 @@ Base = declarative_base()
 
 class ABC:
     # Make it so the tables pretty print the columns and values as json
-    def __repr__(self):
-        columns = []
-        # Get (hopefully) columns names
-        for i in dir(self):
-            if not i.startswith("_") and not callable(getattr(self, i)) and i not in ["metadata", "registry"]:
-                columns.append(i)
-        data = {}
-        for column in columns:
-            data.update({column: getattr(self, column)})
-        return json.dumps(data, indent=2, sort_keys=True)
+    # TODO: fix this or remove it
+    # def __repr__(self):
+    #     columns = []
+    #     # Get (hopefully) columns names
+    #     for i in dir(self):
+    #         if not i.startswith("_") and not callable(getattr(self, i)) and i not in ["metadata", "registry"]:
+    #             columns.append(i)
+    #     data = {}
+    #     for column in columns:
+    #         data.update({column: getattr(self, column)})
+    #     return json.dumps(data, indent=2, sort_keys=True)
+    pass
 
 
 class User(ABC, Base):
@@ -38,14 +40,18 @@ class User(ABC, Base):
     def exists(self, session: Session):
         return session.query(sqla.exists().where(User.id == self.id)).scalar()
 
-    def create_unique(self, session: Session, user_id=None, last_played=None, last_ip=None):
+    def create_unique(self, session: Session, user_id=None, last_played=None, last_ip=None, game_id=None):
         self.last_played = last_played
         self.last_ip = last_ip
         exists = True
+        # Find a valid id that doesn't exist
         while exists:
             exists = self.exists(session)
             self.id = user_id or encode(os.urandom(32)).decode()
         return self
+
+    def is_player(self):
+        return self.id != encode(b"ai").decode()
 
 
 class Piece(ABC, Base):
@@ -62,6 +68,9 @@ class Piece(ABC, Base):
         self.row = row
         self.owner_id = owner_id
         self.king = king
+
+    def player_owned(self):
+        return self.owner_id != encode(b"ai").decode()
 
 
 class Score(ABC, Base):
@@ -80,11 +89,25 @@ class Score(ABC, Base):
         self.user_id = user_id
 
 
+class GameState(ABC, Base):
+    __tablename__ = "game_states"
+    id = sqla.Column("id", sqla.Integer, primary_key=True)
+    game_id = sqla.Column("game_id", sqla.Integer, nullable=False)
+    user_id = sqla.Column("user_id", sqla.String, sqla.ForeignKey("users.id"), nullable=False)
+    user = relation(User, backref=backref("users", lazy="joined"))
+    __table_args__ = (sqla.UniqueConstraint("game_id", "user_id", name="_game_user_uc"),)
+
+    def __init__(self, game_id=None, user_id=None):
+        self.game_id = game_id
+        self.user_id = user_id
+
+
 class BoardState(ABC, Base):
     __tablename__ = "board_states"
     id = sqla.Column("id", sqla.Integer, primary_key=True)
-    game_id = sqla.Column("game_id", sqla.Integer, nullable=False)
+    game_id = sqla.Column("game_id", sqla.Integer, sqla.ForeignKey("game_states.game_id"), nullable=False)
     piece_id = sqla.Column("piece_id", sqla.Integer, sqla.ForeignKey("pieces.id"), nullable=False)
+    piece = relation(Piece, backref=backref("board_states", lazy="joined"))
 
     def __init__(self, game_id=None, piece_id=None):
         self.game_id = game_id

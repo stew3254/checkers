@@ -1,0 +1,36 @@
+mixin place_piece(pos, dim, piece)
+  if piece != None
+      if not piece.player_owned()
+        if piece.king
+          .piece.ai_piece.king_piece
+        else
+          .piece.ai_piece
+      else
+        if piece.king
+          .piece.player_piece.king_piece
+        else
+          .piece.player_piece
+
+
+.board
+   - var dim = 8
+   - var letters = "abcdefgh"
+   - for tile in range(dim**2)
+     - var tile_name = letters[tile%dim]+str(dim-int(tile/dim))
+     - var pos = ((dim-1) - int(tile/dim))*8 + tile%dim
+     - var piece = pieces.get(pos)
+     if tile % 2 == 0
+       if int(tile/dim) % 2 == 0
+         //- This can't have spaces since pypugjs is stupid and won't work otherwise
+         .board_tile.white(id= "board_tile_"+tile_name)
+       else
+         .board_tile.black(id= "board_tile_"+tile_name)
+            +place_piece(pos, dim, piece)
+     else
+       if int(tile/dim) % 2 == 0
+         //- This can't have spaces since pypugjs is stupid and won't work otherwise
+         .board_tile.black(id= "board_tile_"+tile_name)
+            +place_piece(pos, dim, piece)
+       else
+        .board_tile.white(id= "board_tile_"+tile_name)
+
