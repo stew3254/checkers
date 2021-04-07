@@ -1,9 +1,10 @@
+import checkers
 import flask
 import jinja2
 import sqlalchemy as sqla
+import models
 from sqlalchemy.orm import sessionmaker, scoped_session
 from sassutils.wsgi import SassMiddleware
-from models import *
 
 # Create the flask app
 app = flask.Flask(__name__)
@@ -17,9 +18,10 @@ app.wsgi_app = SassMiddleware(app.wsgi_app, {
             'strip_extension': True,
             },
 })
-engine = sqla.create_engine("sqlite://checkers.db")
+engine = sqla.create_engine("sqlite:///checkers.db")
 conn = engine.connect()
-Base.metadata.create_all(engine)
+models.Base.metadata.drop_all(engine)
+models.Base.metadata.create_all(engine)
 session = scoped_session(sessionmaker(bind=engine, autoflush=False, autocommit=False))()
 
 
@@ -34,6 +36,12 @@ def play():
         return flask.render_template("checkers.pug", letters="abcdefgh", str=str)
     else:
         return flask.request.form
+
+
+@app.route("/test", methods=["GET"])
+def test():
+    game_id = checkers.new_game(session, "test")
+    return str(game_id)
 
 
 if __name__ == "__main__":
