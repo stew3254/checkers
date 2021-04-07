@@ -7,26 +7,22 @@ def new_game(session: Session, user_id: str):
     :param user_id:
     :return: The id of the game created
     """
+    letters = "abcdefgh"
     pieces = []
-    offset = 1
+    i = 0
+    dim = 8
     uid = user_id
-    # Loop through both side
-    for side in range(2):
-        if side == 1:
-            offset = 6
-            uid = encode(b"ai").decode()
-        # Rows on each side
-        for i in range(3):
-            row = i + offset
-            # Go through columns
-            for column, letter in enumerate("abcdefgh"):
-                # Make sure to add pieces to black squares only
-                if row % 2 == 0:
-                    if column % 2 == 1:
-                        pieces.append(Piece(letter, row, uid))
-                else:
-                    if column % 2 == 0:
-                        pieces.append(Piece(letter, row, uid))
+
+    # Add all of the pieces to the game
+    while i < dim ** 2:
+        if dim*3 < i < dim * 6:
+            i = dim * 6
+            continue
+        elif i // dim == 0:
+            pieces.append(Piece(letters[i // dim], i % dim, uid))
+        else:
+            pieces.append(Piece(letters[i // dim], i % dim + 1, uid))
+            i += 2
 
     # Add all of the pieces to the table
     session.add_all(pieces)

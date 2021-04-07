@@ -16,9 +16,16 @@ mixin place_piece(pos, pieces)
 .board
   - var dim = 8
   - for tile in range(0, dim**2)
-      if tile % 2 == 0
-        //-  This can't have spaces since pypugjs is stupid and won't work otherwise
-        .board_tile.white(id= "board_tile_"+letters[int(tile/dim)]+str(tile%dim+1))
-      else
+    if tile % 2 == 0
+      if int(tile/dim) % 2 == 0
+        //- This can't have spaces since pypugjs is stupid and won't work otherwise
         .board_tile.black(id= "board_tile_"+letters[int(tile/dim)]+str(tile%dim+1))
+      else
+        .board_tile.white(id= "board_tile_" + letters[int(tile / dim)] + str(tile % dim + 1))
+    else
+      if int(tile/dim) % 2 == 0
+        //- This can't have spaces since pypugjs is stupid and won't work otherwise
+        .board_tile.white(id= "board_tile_" + letters[int(tile / dim)] + str(tile % dim + 1))
+      else
+        .board_tile.black(id= "board_tile_" + letters[int(tile / dim)] + str(tile % dim + 1))
 

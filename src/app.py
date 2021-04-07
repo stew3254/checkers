@@ -13,8 +13,8 @@ app.jinja_loader = jinja2.FileSystemLoader("templates/pug")
 app.jinja_env.add_extension("pypugjs.ext.jinja.PyPugJSExtension")
 # Allow sass to be used instead of css
 app.wsgi_app = SassMiddleware(app.wsgi_app, {
-    'app': {'sass_path': '/static/sass',
-            'css_path': '/static/css',
+    'app': {'sass_path': 'static/sass',
+            'css_path': 'static/css',
             'strip_extension': True,
             },
 })
