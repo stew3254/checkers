@@ -25,7 +25,7 @@ app.wsgi_app = SassMiddleware(app.wsgi_app, {
 engine = sqla.create_engine("sqlite:///checkers.db?check_same_thread=False")
 conn = engine.connect()
 # Drop all tables to clean up old things (For debugging purposes uncomment this)
-models.Base.metadata.drop_all(engine)
+# models.Base.metadata.drop_all(engine)
 # Create all of the tables for the db if they don't already exist
 models.Base.metadata.create_all(engine)
 session = scoped_session(sessionmaker(bind=engine, autoflush=False, autocommit=False))()
