@@ -34,14 +34,17 @@ def new_game(session: Session, user_id: str):
     session.flush(pieces)
 
     # Now get the next game id
-    res = session.query(sqla.func.max(BoardState.game_id)).scalar()
-    if res is None:
-        res = 1
-    else:
-        res += 1
+    new_game_id = session.query(
+        # Make sure it returns 0 instead of none
+        sqla.func.coalesce(
+            # Get the max board state
+            sqla.func.max(BoardState.game_id),
+            0
+        )
+    ).scalar() + 1
 
     # Add all of the board states for this game
-    session.add_all(BoardState(res, piece.id) for piece in pieces)
+    session.add_all(BoardState(new_game_id, piece.id) for piece in pieces)
     # Commit the transaction
     session.commit()
-    return res
+    return new_game_id
