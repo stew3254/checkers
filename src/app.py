@@ -31,14 +31,8 @@ models.Base.metadata.create_all(engine)
 session = scoped_session(sessionmaker(bind=engine, autoflush=False, autocommit=False))()
 
 
-# Render the main page
-@app.route("/", methods=["GET"])
-def index():
-    return flask.render_template("index.pug")
-
-
-# Render the template to play the game
-@app.route("/play", methods=["GET", "POST"])
+# Render the page to play the game
+@app.route("/", methods=["GET", "POST"])
 def play():
     resp = flask.make_response()
     if flask.request.method == "GET":
@@ -106,12 +100,6 @@ def play():
         ).encode()]
 
     return resp
-
-
-@app.route("/test", methods=["GET"])
-def test():
-    game_id = checkers.new_game(session, "test")
-    return str(game_id)
 
 
 if __name__ == "__main__":
