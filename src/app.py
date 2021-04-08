@@ -1,15 +1,18 @@
 import checkers
 import flask
+import flask_socketio as ws
 import jinja2
 import sqlalchemy as sqla
 import models
 import datetime
 from sqlalchemy.orm import sessionmaker, scoped_session
 from sassutils.wsgi import SassMiddleware
-from base64 import b64encode as encode
+from lib import *
 
 # Create the flask app
 app = flask.Flask(__name__)
+# Create the websocket
+socketio = ws.SocketIO(app)
 # Allow using pug for templating
 app.jinja_loader = jinja2.FileSystemLoader("src/templates/pug")
 app.jinja_env.add_extension("pypugjs.ext.jinja.PyPugJSExtension")
@@ -102,6 +105,12 @@ def play():
     return resp
 
 
+@socketio.on(Channel.Move, namespace="/ws")
+def place(data):
+    if data.get("test") == "message":
+        ws.emit(Channel.MoveError, "Bad")
+
+
 if __name__ == "__main__":
-    app.run()
+    socketio.run(app)
     session.close()
