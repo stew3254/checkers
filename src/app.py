@@ -25,25 +25,26 @@ app.wsgi_app = SassMiddleware(app.wsgi_app, {
 engine = sqla.create_engine("sqlite:///checkers.db?check_same_thread=False")
 conn = engine.connect()
 # Drop all tables to clean up old things (For debugging purposes uncomment this)
-# models.Base.metadata.drop_all(engine)
+models.Base.metadata.drop_all(engine)
 # Create all of the tables for the db if they don't already exist
 models.Base.metadata.create_all(engine)
 session = scoped_session(sessionmaker(bind=engine, autoflush=False, autocommit=False))()
 
 
+# Render the main page
 @app.route("/", methods=["GET"])
 def index():
     return flask.render_template("index.pug")
 
 
+# Render the template to play the game
 @app.route("/play", methods=["GET", "POST"])
 def play():
-    resp = flask.make_response(flask.render_template("checkers.pug", str=str, int=int, pieces={}))
+    resp = flask.make_response()
     if flask.request.method == "GET":
         user_id = flask.request.cookies.get("token")
         # If the uid doesn't exist or is invalid, make a new one
         if user_id is None or not session.query(sqla.exists().where(models.User.id == user_id)).scalar():
-            print(user_id)
             user = models.User().create_unique(session, last_ip=flask.request.remote_addr)
             # Add the user to the database
             session.add(user)
@@ -56,11 +57,13 @@ def play():
                 secure=True,
                 httponly=True
             )
+            # Fix the user id for later
+            user_id = user.id
 
-        # Grab all board states for this user
+        # Grab the game state
         game_state = session.query(models.GameState) \
             .join(models.User) \
-            .filter(models.User.id == user_id or models.User.id == encode(b"ai").decode()) \
+            .filter(models.User.id == user_id) \
             .scalar()
         session.commit()
 
@@ -68,11 +71,13 @@ def play():
         if game_state is None:
             game_state = models.GameState()
             game_state.id = checkers.new_game(session, user_id)
+
         # Get the board states
         board_states = session.query(models.BoardState) \
             .filter(models.BoardState.game_id == game_state.id) \
             .all()
         session.commit()
+
         # Create a dict of pieces from the board states to give to the template
         pieces = {}
 
@@ -83,7 +88,22 @@ def play():
         # Make a dict of pieces where the linear position is the key
         pieces = {get_pos(state.piece): state.piece for state in board_states}
 
-        resp.response = [flask.render_template("checkers.pug", str=str, int=int, pieces=pieces).encode()]
+        # Get the score
+        score = session.query(models.Score).join(models.User).where(models.User.id == user_id).scalar()
+        # If score doesn't exist, make it
+        if score is None:
+            score = models.Score(user_id=user_id)
+            session.add(score)
+        session.commit()
+
+        # Hijack the response to fix the template
+        resp.response = [flask.render_template(
+            "checkers.pug",
+            str=str,
+            int=int,
+            pieces=pieces,
+            score=score
+        ).encode()]
 
     return resp
 

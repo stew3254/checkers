@@ -15,7 +15,7 @@ def new_game(session: Session, user_id: str):
 
     # Add all of the pieces to the game
     while i < dim ** 2:
-        if dim*3 <= i < dim * 5:
+        if dim*3 <= i < dim * (dim-3):
             i = dim * 5 + 1
             uid = encode(b"ai").decode()
             continue

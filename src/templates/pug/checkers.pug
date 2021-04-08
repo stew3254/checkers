@@ -16,14 +16,14 @@ html(lang="en")
               th Draws
             tr
               td You
-              td#player_wins 0
-              td#player_losses 0
-              td#player_draws 0
+              td#player_wins= score.wins
+              td#player_losses= score.losses
+              td#player_draws= score.ties
             tr
               td AI
-              td#ai_wins 0
-              td#ai_losses 0
-              td#ai_draws 0
+              td#ai_wins= score.losses
+              td#ai_losses= score.wins
+              td#ai_draws= score.ties
       .container_flex
         .board_layout
           include board
