@@ -26,6 +26,7 @@ socket.emit(
 		piece: {
 			column: "a",
 			row: 1,
+			king: false,
 		},
 		tile: {
 			column: "b",

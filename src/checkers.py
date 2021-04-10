@@ -1,4 +1,9 @@
+from errors import *
 from models import *
+from sqlalchemy.exc import MultipleResultsFound
+import sqlalchemy as sqla
+
+COLUMNS="abcdefgh"
 
 
 def new_game(session: Session, user_id: str):
@@ -15,16 +20,16 @@ def new_game(session: Session, user_id: str):
 
     # Add all of the pieces to the game
     while i < dim ** 2:
-        if dim*3 <= i < dim * (dim-3):
+        if dim * 3 <= i < dim * (dim - 3):
             i = dim * 5 + 1
             uid = encode(b"ai").decode()
             continue
         pieces.append(Piece(letters[i % dim], i // dim, uid))
         # Need to skip an extra one to find the next black
-        if (i // dim) % 2 == 0 and i % dim == dim-2:
+        if (i // dim) % 2 == 0 and i % dim == dim - 2:
             i += 3
         # Don't skip at all, just go to the next black
-        elif (i // dim) % 2 == 1 and i % dim == dim-1:
+        elif (i // dim) % 2 == 1 and i % dim == dim - 1:
             i += 1
         # Normal rules when in a row
         else:
@@ -54,3 +59,26 @@ def new_game(session: Session, user_id: str):
     # Commit the transaction
     session.commit()
     return new_game_id
+
+
+def place_move(session: Session, game_id: int, piece: Piece, position: str):
+    # Check to see if the piece exists
+    try:
+        res = session.query(Piece).join(BoardState).where(sqla.and_(
+            Piece.row == piece.row,
+            Piece.column == piece.column,
+            Piece.owner_id == piece.owner_id,
+            BoardState.game_id == game_id
+        )).scalar()
+    # Got back too many pieces
+    except MultipleResultsFound:
+        raise InvalidPiece("error: too many pieces found, couldn't tell which to refer to")
+    # Raise an exception if it doesn't exist
+    if res is None:
+        raise InvalidPiece("error: piece does not exist")
+    piece = res
+
+    # See if a position is valid to move to
+
+
+    session.commit()

@@ -57,7 +57,7 @@ class User(ABC, Base):
 class Piece(ABC, Base):
     __tablename__ = "pieces"
     id = sqla.Column("id", sqla.Integer, primary_key=True)
-    column = sqla.Column("column", sqla.String(1), nullable=False)
+    column = sqla.Column("column", sqla.String, nullable=False)
     row = sqla.Column("row", sqla.SmallInteger, nullable=False)
     king = sqla.Column("king", sqla.Boolean, nullable=False)
     owner_id = sqla.Column("owner", sqla.ForeignKey("users.id"), index=True, nullable=False)

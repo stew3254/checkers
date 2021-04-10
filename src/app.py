@@ -5,6 +5,7 @@ import jinja2
 import sqlalchemy as sqla
 import models
 import datetime
+from errors import *
 from sqlalchemy.orm import sessionmaker, scoped_session
 from sassutils.wsgi import SassMiddleware
 from lib import *
@@ -35,72 +36,76 @@ session = scoped_session(sessionmaker(bind=engine, autoflush=False, autocommit=F
 
 
 # Render the page to play the game
-@app.route("/", methods=["GET", "POST"])
+@app.route("/", methods=["GET"])
 def play():
     resp = flask.make_response()
-    if flask.request.method == "GET":
-        user_id = flask.request.cookies.get("token")
-        # If the uid doesn't exist or is invalid, make a new one
-        if user_id is None or not session.query(sqla.exists().where(models.User.id == user_id)).scalar():
-            user = models.User().create_unique(session, last_ip=flask.request.remote_addr)
-            # Add the user to the database
-            session.add(user)
-            session.commit()
-            # Set cookie to expire 4 weeks from now if not used
-            resp.set_cookie(
-                "token",
-                user.id,
-                expires=datetime.datetime.utcnow() + datetime.timedelta(days=28),
-                secure=True,
-                httponly=True
-            )
-            # Fix the user id for later
-            user_id = user.id
-
-        # Grab the game state
-        game_state = session.query(models.GameState) \
-            .join(models.User) \
-            .filter(models.User.id == user_id) \
-            .scalar()
+    user_id = flask.request.cookies.get("token")
+    # If the uid doesn't exist or is invalid, make a new one
+    if user_id is None or not session.query(sqla.exists().where(models.User.id == user_id)).scalar():
+        user = models.User().create_unique(session, last_ip=flask.request.remote_addr)
+        # Add the user to the database
+        session.add(user)
         session.commit()
+        # Set cookie to expire 4 weeks from now if not used
+        resp.set_cookie(
+            "token",
+            user.id,
+            expires=datetime.datetime.utcnow() + datetime.timedelta(days=28),
+            secure=True,
+            httponly=True
+        )
+        # Fix the user id for later
+        user_id = user.id
 
-        # If they don't exist, make a new game
-        if game_state is None:
-            game_state = models.GameState()
-            game_state.id = checkers.new_game(session, user_id)
+    # Grab the game state
+    game_state = session.query(models.GameState) \
+        .join(models.User) \
+        .filter(models.User.id == user_id) \
+        .scalar()
+    session.commit()
 
-        # Get the board states
-        board_states = session.query(models.BoardState) \
-            .filter(models.BoardState.game_id == game_state.id) \
-            .all()
-        session.commit()
+    # If they don't exist, make a new game
+    if game_state is None:
+        game_state = models.GameState()
+        game_state.game_id = checkers.new_game(session, user_id)
 
-        # Create a dict of pieces from the board states to give to the template
-        pieces = {}
+    # Get the board states
+    board_states = session.query(models.BoardState) \
+        .filter(models.BoardState.game_id == game_state.game_id) \
+        .all()
+    session.commit()
 
-        # Get linear position based on grid
-        def get_pos(piece):
-            return 8 * piece.row + (ord(piece.column) - ord("a"))
+    # Create a dict of pieces from the board states to give to the template
+    pieces = {}
 
-        # Make a dict of pieces where the linear position is the key
-        pieces = {get_pos(state.piece): state.piece for state in board_states}
+    # Get linear position based on grid
+    def get_pos(piece):
+        return 8 * piece.row + (ord(piece.column) - ord("a"))
 
-        # Get the score
-        score = session.query(models.Score).join(models.User).where(models.User.id == user_id).scalar()
-        # If score doesn't exist, make it
-        if score is None:
-            score = models.Score(user_id=user_id)
-            session.add(score)
-        session.commit()
+    # Make a dict of pieces where the linear position is the key
+    pieces = {get_pos(state.piece): state.piece for state in board_states}
 
-        # Hijack the response to fix the template
-        resp.response = [flask.render_template(
-            "checkers.pug",
-            str=str,
-            int=int,
-            pieces=pieces,
-            score=score
-        ).encode()]
+    # Get the score
+    score = session.query(models.Score).join(models.User).where(models.User.id == user_id).scalar()
+    # If score doesn't exist, make it
+    if score is None:
+        score = models.Score(user_id=user_id)
+        session.add(score)
+    session.commit()
+
+    # Hijack the response to fix the template
+    resp.response = [flask.render_template(
+        "checkers.pug",
+        str=str,
+        int=int,
+        pieces=pieces,
+        score=score
+    ).encode()]
+
+    try:
+        checkers.place_move(session, game_state.game_id, models.Piece("a", 0, owner_id=user_id), "b1")
+    except InvalidPiece as e:
+        print(e)
 
     return resp
 
