@@ -4,7 +4,9 @@ from datetime import datetime
 import sqlalchemy as sqla
 from sqlalchemy.orm import relation, backref, Session
 from base64 import b64encode as encode
+from errors import *
 from sqlalchemy.ext.declarative import declarative_base
+from sqlalchemy.exc import MultipleResultsFound
 
 # Define the base for everything to derive from
 Base = declarative_base()
@@ -57,20 +59,49 @@ class User(ABC, Base):
 class Piece(ABC, Base):
     __tablename__ = "pieces"
     id = sqla.Column("id", sqla.Integer, primary_key=True)
-    column = sqla.Column("column", sqla.String, nullable=False)
     row = sqla.Column("row", sqla.SmallInteger, nullable=False)
+    column = sqla.Column("column", sqla.Integer, nullable=False)
     king = sqla.Column("king", sqla.Boolean, nullable=False)
     owner_id = sqla.Column("owner", sqla.ForeignKey("users.id"), index=True, nullable=False)
     owner = relation(User, backref=backref("pieces", lazy="joined"))
 
-    def __init__(self, column=None, row=None, owner_id=encode(b"ai").decode(), king=False):
-        self.column = column
+    def __init__(self, row=None, column=None, owner_id=encode(b"ai").decode(), king=False, id=None):
         self.row = row
+        self.column = column
         self.owner_id = owner_id
         self.king = king
+        self.id = id
 
     def player_owned(self):
         return self.owner_id != encode(b"ai").decode()
+
+    def get_from_db(self, session: Session, game_id: int):
+        # Check to see if the piece exists
+        try:
+            res = session.query(Piece).join(BoardState).where(sqla.and_(
+                Piece.row == self.row,
+                Piece.column == self.column,
+                BoardState.game_id == game_id
+            )).scalar()
+            session.commit()
+        # Got back too many pieces
+        except MultipleResultsFound:
+            raise InvalidPiece("Too many pieces found, couldn't tell which to refer to")
+        # Raise an exception if it doesn't exist
+        if res is None:
+            raise InvalidPiece("Piece does not exist")
+        return res
+
+    def exists(self, session: Session, game_id=0):
+        if self.id != 0 and self.id is not None:
+            res = session.query(sqla.exists().where(Piece.id == self.id)).scalar()
+        else:
+            res = session.query(sqla.exists().where(sqla.and_(
+                Piece.row == self.row,
+                Piece.column == self.column,
+                BoardState.game_id == game_id
+            ))).scalar()
+        return res
 
 
 class Score(ABC, Base):

@@ -80,7 +80,7 @@ def play():
 
     # Get linear position based on grid
     def get_pos(piece):
-        return 8 * piece.row + (ord(piece.column) - ord("a"))
+        return 8 * piece.row + piece.column
 
     # Make a dict of pieces where the linear position is the key
     pieces = {get_pos(state.piece): state.piece for state in board_states}
@@ -101,11 +101,6 @@ def play():
         pieces=pieces,
         score=score
     ).encode()]
-
-    try:
-        checkers.place_move(session, game_state.game_id, models.Piece("a", 0, owner_id=user_id), "b1")
-    except InvalidPiece as e:
-        print(e)
 
     return resp
 

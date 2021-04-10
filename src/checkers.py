@@ -3,7 +3,8 @@ from models import *
 from sqlalchemy.exc import MultipleResultsFound
 import sqlalchemy as sqla
 
-COLUMNS="abcdefgh"
+COLUMNS = "abcdefgh"
+DIMENSIONS = 8
 
 
 def new_game(session: Session, user_id: str):
@@ -12,24 +13,22 @@ def new_game(session: Session, user_id: str):
     :param user_id:
     :return: The id of the game created
     """
-    letters = "abcdefgh"
     pieces = []
     i = 0
-    dim = 8
     uid = user_id
 
     # Add all of the pieces to the game
-    while i < dim ** 2:
-        if dim * 3 <= i < dim * (dim - 3):
-            i = dim * 5 + 1
+    while i < DIMENSIONS ** 2:
+        if DIMENSIONS * 3 <= i < DIMENSIONS * (DIMENSIONS - 3):
+            i = DIMENSIONS * 5 + 1
             uid = encode(b"ai").decode()
             continue
-        pieces.append(Piece(letters[i % dim], i // dim, uid))
+        pieces.append(Piece(i // DIMENSIONS, i % DIMENSIONS, uid))
         # Need to skip an extra one to find the next black
-        if (i // dim) % 2 == 0 and i % dim == dim - 2:
+        if (i // DIMENSIONS) % 2 == 0 and i % DIMENSIONS == DIMENSIONS - 2:
             i += 3
         # Don't skip at all, just go to the next black
-        elif (i // dim) % 2 == 1 and i % dim == dim - 1:
+        elif (i // DIMENSIONS) % 2 == 1 and i % DIMENSIONS == DIMENSIONS - 1:
             i += 1
         # Normal rules when in a row
         else:
@@ -61,24 +60,35 @@ def new_game(session: Session, user_id: str):
     return new_game_id
 
 
-def place_move(session: Session, game_id: int, piece: Piece, position: str):
-    # Check to see if the piece exists
-    try:
-        res = session.query(Piece).join(BoardState).where(sqla.and_(
-            Piece.row == piece.row,
-            Piece.column == piece.column,
-            Piece.owner_id == piece.owner_id,
-            BoardState.game_id == game_id
-        )).scalar()
-    # Got back too many pieces
-    except MultipleResultsFound:
-        raise InvalidPiece("error: too many pieces found, couldn't tell which to refer to")
-    # Raise an exception if it doesn't exist
-    if res is None:
-        raise InvalidPiece("error: piece does not exist")
-    piece = res
+def place_move(session: Session, game_id: int, piece: Piece, position: tuple, is_jump=False):
+    # Get the piece from the database if it exists
+    # If it doesn't, don't handle the exception
+    piece = piece.get_from_db(session, game_id)
 
-    # See if a position is valid to move to
+    # Make sure the move type is not a jump
+    if not is_jump:
+        # Make sure move is within bounds of the board
+        if not (0 <= position[0] <= DIMENSIONS and 0 <= position[1] <= DIMENSIONS):
+            raise InvalidMove("Cannot place move off of the board")
 
+        # Get correct movement direction
+        direction = 1
+        if piece.owner_id == encode(b"ai").decode():
+            direction = -1
+
+        # Get tiles moves
+        row_diff = direction * (position[0] - piece.row)
+        col_diff = position[1] - piece.column
+        if abs(row_diff) != 1 or abs(col_diff) != 1:
+            raise InvalidMove("Tried to move too many spaces")
+        elif row_diff != 1 and not piece.king:
+            raise InvalidMove("Cannot move non-king pieces backwards")
+
+        # See if a piece is already there or not
+        if Piece(*position).exists(session, game_id):
+            raise InvalidMove("Another piece is already here")
+
+    # Update the new position of the piece
+    piece.row, piece.column = position[0], position[1]
 
     session.commit()

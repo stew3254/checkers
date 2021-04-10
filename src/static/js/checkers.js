@@ -24,13 +24,13 @@ socket.emit(
 	Channel.Move,
 	{
 		piece: {
-			column: "a",
-			row: 1,
+			column: 0,
+			row: 0,
 			king: false,
 		},
 		tile: {
-			column: "b",
-			row: 2,
+			column: 1,
+			row: 1,
 		}
 	}
 );
