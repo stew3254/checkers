@@ -60,7 +60,7 @@ def new_game(session: Session, user_id: str):
     return new_game_id
 
 
-def place_move(session: Session, game_id: int, piece: Piece, position: tuple, is_jump=False):
+def place_move(session: Session, game_id: int, piece: Piece, position: dict, is_jump=False):
     # Get the piece from the database if it exists
     # If it doesn't, don't handle the exception
     piece = piece.get_from_db(session, game_id)
@@ -68,7 +68,7 @@ def place_move(session: Session, game_id: int, piece: Piece, position: tuple, is
     # Make sure the move type is not a jump
     if not is_jump:
         # Make sure move is within bounds of the board
-        if not (0 <= position[0] <= DIMENSIONS and 0 <= position[1] <= DIMENSIONS):
+        if not (0 <= position["row"] <= DIMENSIONS and 0 <= position["column"] <= DIMENSIONS):
             raise InvalidMove("Cannot place move off of the board")
 
         # Get correct movement direction
@@ -77,18 +77,18 @@ def place_move(session: Session, game_id: int, piece: Piece, position: tuple, is
             direction = -1
 
         # Get tiles moves
-        row_diff = direction * (position[0] - piece.row)
-        col_diff = position[1] - piece.column
+        row_diff = direction * (position["row"] - piece.row)
+        col_diff = position["column"] - piece.column
         if abs(row_diff) != 1 or abs(col_diff) != 1:
             raise InvalidMove("Tried to move too many spaces")
         elif row_diff != 1 and not piece.king:
             raise InvalidMove("Cannot move non-king pieces backwards")
 
         # See if a piece is already there or not
-        if Piece(*position).exists(session, game_id):
+        if Piece(**position).exists(session, game_id):
             raise InvalidMove("Another piece is already here")
 
     # Update the new position of the piece
-    piece.row, piece.column = position[0], position[1]
+    piece.row, piece.column = position["row"], position["column"]
 
     session.commit()

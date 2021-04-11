@@ -33,6 +33,7 @@ class User(ABC, Base):
     id = sqla.Column("id", sqla.String, primary_key=True)
     last_played = sqla.Column("last_played", sqla.DateTime, nullable=False, default=datetime.utcnow())
     last_ip = sqla.Column("last_ip", sqla.String, nullable=False)
+    turn = sqla.Column("turn", sqla.Boolean, nullable=False, default=True)
 
     def __init__(self, user_id=None, last_played=None, last_ip=None):
         self.id = user_id

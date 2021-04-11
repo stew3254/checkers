@@ -13,7 +13,7 @@ from lib import *
 # Create the flask app
 app = flask.Flask(__name__)
 # Create the websocket
-socketio = ws.SocketIO(app)
+socket = ws.SocketIO(app)
 # Allow using pug for templating
 app.jinja_loader = jinja2.FileSystemLoader("src/templates/pug")
 app.jinja_env.add_extension("pypugjs.ext.jinja.PyPugJSExtension")
@@ -52,7 +52,8 @@ def play():
             user.id,
             expires=datetime.datetime.utcnow() + datetime.timedelta(days=28),
             secure=True,
-            httponly=True
+            # This is bad practice, but I didn't want to set up proper authentication
+            httponly=False
         )
         # Fix the user id for later
         user_id = user.id
@@ -105,12 +106,32 @@ def play():
     return resp
 
 
-@socketio.on(Channel.Move, namespace="/ws")
+# TODO make this require user authentication
+@socket.on(Channel.Move, namespace="/ws")
 def place(data):
-    if data.get("test") == "message":
-        ws.emit(Channel.MoveError, "Bad")
+    # Create a piece from the json
+    piece = models.Piece(**data["piece"])
+
+    # Get the user
+    user = session.query(models.User).where(models.User.id == data["token"]).scalar()
+
+    # Make sure it's the user's turn before trying to place a move
+    if user.turn:
+        try:
+            # Attempt to place the move
+            checkers.place_move(session, data["game_id"], piece, data["position"])
+            # Tell the user it's no longer their turn
+            user.turn = False
+        except InvalidPiece as e:
+            socket.emit(Channel.PieceError, e)
+        except InvalidMove as e:
+            socket.emit(Channel.MoveError, e)
+    else:
+        socket.emit(Channel.TurnError, "it is not your turn yet")
+
+    session.commit()
 
 
 if __name__ == "__main__":
-    socketio.run(app)
+    socket.run(app)
     session.close()

@@ -3,8 +3,24 @@ const Channel = {
 	Move: "move",
 	Jump: "Jump",
 	MoveError: "move_error",
+	PieceError: "piece_error",
+	TurnError: "turn_error",
 	Error: "error"
 };
+
+// Gets a cookie
+const getCookie = (cookieKey) => {
+	let cookieName = `${cookieKey}=`;
+	let cookieArray = document.cookie.split(';');
+	for (let cookie of cookieArray) {
+		while (cookie.charAt(0) === ' ') {
+			cookie = cookie.substring(1, cookie.length);
+		}
+		if (cookie.indexOf(cookieName) === 0) {
+			return cookie.substring(cookieName.length, cookie.length);
+		}
+	}
+}
 
 let socket = io("/ws");
 
@@ -19,18 +35,18 @@ socket.on(Channel.MoveError, error => {
 	console.log(error);
 });
 
-
 socket.emit(
 	Channel.Move,
 	{
+		token: getCookie("token"),
+		game_id: 1,
 		piece: {
 			column: 0,
-			row: 0,
-			king: false,
+			row: 2,
 		},
-		tile: {
+		position: {
 			column: 1,
-			row: 1,
+			row: 3,
 		}
 	}
 );
