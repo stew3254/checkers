@@ -1,10 +1,9 @@
-import json
 import os
 from datetime import datetime
 import sqlalchemy as sqla
 from sqlalchemy.orm import relation, backref, Session
 from base64 import b64encode as encode
-from errors import *
+from src.errors import *
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.exc import MultipleResultsFound
 
