@@ -3,7 +3,7 @@ from datetime import datetime
 import sqlalchemy as sqla
 from sqlalchemy.orm import relation, backref, Session
 from base64 import b64encode as encode
-from src.errors import *
+from errors import *
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.exc import MultipleResultsFound
 
