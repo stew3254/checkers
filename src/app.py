@@ -5,7 +5,7 @@ import jinja2
 import sqlalchemy as sqla
 import models
 import datetime
-from src.errors import *
+from errors import *
 from sqlalchemy.orm import sessionmaker, scoped_session
 from sassutils.wsgi import SassMiddleware
 from lib import *
