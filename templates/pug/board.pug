@@ -1,22 +1,31 @@
+mixin place_piece(pos, pieces)
+  - piece = pieces[pos]
+  if piece is not None
+      if piece.owner == "ai"
+        if piece.is_king()
+          .piece.ai_piece.king_piece
+        else
+          .piece.ai_piece
+      elif piece.owner == "player"
+        if piece.is_king()
+          .piece.player_piece.king_piece
+        else
+          .piece.player_piece
+
+
 .board
   - var dims = 8
-  - for pos in range(dims, 0, -1)
-    - for i in range(dims)
-      if pos%2 == 0
-        if i%2 == 0
-          div.board-tile.white(id= "board-tile-" + letters[i] + str(pos))
+  - for row in range(dims, 0, -1)
+    - for column in range(dims)
+      if row % 2 == 0
+        if column % 2 == 0
+          div.board_tile.white(id= "board_tile_" + letters[column] + str(pos))
+            +place_piece(letters[column] + str(row), pieces)
         else
-          div.board-tile.black(id= "board-tile-" + letters[i] + str(pos))
-            if pos > 5
-              .piece.ai-piece
-            elif pos == 2
-              .piece.player-piece
+          div.board_tile.black(id= "board_tile_" + letters[column] + str(pos))
       else
-        if i % 2 == 0
-          div.board-tile.black(id= "board-tile-" + letters[i] + str(pos))
-            if pos == 7
-              .piece.ai-piece
-            elif pos < 4
-              .piece.player-piece
+        if column % 2 == 0
+          div.board_tile.black(id= "board_tile_" + letters[column] + str(pos))
         else
-          div.board-tile.white(id= "board-tile-" + letters[i] + str(pos))
+          div.board_tile.white(id= "board_tile_" + letters[column] + str(pos))
+
