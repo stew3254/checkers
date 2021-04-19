@@ -83,13 +83,13 @@ class Piece(ABC, Base):
                 Piece.column == self.column,
                 BoardState.game_id == game_id
             )).scalar()
-            session.commit()
         # Got back too many pieces
         except MultipleResultsFound:
             raise InvalidPiece("Too many pieces found, couldn't tell which to refer to")
         # Raise an exception if it doesn't exist
         if res is None:
             raise InvalidPiece("Piece does not exist")
+        session.commit()
         return res
 
     def exists(self, session: Session, game_id=0):
@@ -101,6 +101,7 @@ class Piece(ABC, Base):
                 Piece.column == self.column,
                 BoardState.game_id == game_id
             ))).scalar()
+        session.commit()
         return res
 
 

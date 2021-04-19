@@ -3,4 +3,3 @@ pypugjs
 jinja2
 libsass
 sqlalchemy
-flask-socketio

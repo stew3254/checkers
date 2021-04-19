@@ -1,13 +1,4 @@
-// General websocket errors
-const Channel = {
-	Move: "move",
-	Jump: "Jump",
-	MoveError: "move_error",
-	PieceError: "piece_error",
-	TurnError: "turn_error",
-	Error: "error"
-};
-
+const BASE_URL = window.location.href;
 // Gets a cookie
 const getCookie = (cookieKey) => {
 	let cookieName = `${cookieKey}=`;
@@ -22,31 +13,27 @@ const getCookie = (cookieKey) => {
 	}
 }
 
-let socket = io("/ws");
-
-// General error handling
-socket.on(Channel.Error, error => {
-	// Just print the error
-	console.log(error);
-});
-
-// Problem placing a move
-socket.on(Channel.MoveError, error => {
-	console.log(error);
-});
-
-socket.emit(
-	Channel.Move,
-	{
-		token: getCookie("token"),
+let params = {
+	token: getCookie("token"),
 		game_id: 1,
-		piece: {
-			column: 0,
-			row: 2,
-		},
-		position: {
-			column: 1,
+	piece: {
+	column: 2,
+		row: 2,
+},
+	position: {
+		column: 1,
 			row: 3,
-		}
 	}
-);
+};
+
+let post_options = {
+	method: "POST",
+	body: JSON.stringify(params)
+}
+
+// Post to the API
+fetch(BASE_URL + "/api/place-move", post_options)
+	// Jsonify the result
+	.then(r => r.json())
+	// Actually do something with the result
+	.then(r => console.log(r));
