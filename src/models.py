@@ -72,6 +72,10 @@ class Piece(ABC, Base):
         self.king = king
         self.id = id
 
+    def __repr__(self):
+        return f"{'Player' if self.player_owned() else 'AI'}" \
+               f"({self.row}, {self.column}, {'king' if self.king else 'normal'})"
+
     def player_owned(self):
         return self.owner_id != encode(b"ai").decode()
 
@@ -103,6 +107,9 @@ class Piece(ABC, Base):
             ))).scalar()
         session.commit()
         return res
+
+    def as_json(self):
+        return {"row": self.row, "column": self.column}
 
 
 class Score(ABC, Base):

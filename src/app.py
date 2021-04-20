@@ -26,7 +26,7 @@ app.wsgi_app = SassMiddleware(app.wsgi_app, {
 engine = sqla.create_engine("sqlite:///checkers.db?check_same_thread=False")
 conn = engine.connect()
 # Drop all tables to clean up old things (For debugging purposes uncomment this)
-models.Base.metadata.drop_all(engine)
+# models.Base.metadata.drop_all(engine)
 # Create all of the tables for the db if they don't already exist
 models.Base.metadata.create_all(engine)
 session = scoped_session(sessionmaker(bind=engine, autoflush=False, autocommit=False))()
@@ -134,8 +134,12 @@ def place_move():
 
 @app.route("/api/available-moves", methods=["GET"])
 def get_moves():
-    checkers.get_moves(session, 1, models.Piece(3, 1))
-    return "test"
+    moves = checkers.get_moves(session, 1, models.Piece(3, 1))
+    return {
+        "type": "moves",
+        "message": "The list of move paths available for this move",
+        "response": [[i.as_json() for i in path] for path in moves]
+    }
 
 
 if __name__ == "__main__":

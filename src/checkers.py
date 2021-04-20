@@ -109,8 +109,8 @@ def show_jump(session: Session, game_id: int, piece: Piece, pos: Piece):
             new_column = piece.column + 2
 
         # Make sure it's still in the bounds
-        if (0 < new_row < DIMENSIONS - 1) and (0 < new_column < DIMENSIONS - 1):
-            new_pos = Piece(new_row, new_column)
+        if (0 < new_row < DIMENSIONS) and (0 < new_column < DIMENSIONS):
+            new_pos = Piece(new_row, new_column, piece.owner_id)
             # See once again if this exists
             if not new_pos.exists(session, game_id):
                 return new_pos
@@ -137,13 +137,46 @@ def can_move(session: Session, game_id: int, piece: Piece, forward: bool):
                     return True
 
 
+# Returns a list of jumps it can make, otherwise returns none
+def try_jump(session: Session, game_id: int, piece: Piece, pos: Piece):
+    # Jump scenario
+    jumps = []
+    if pos.exists(session, game_id):
+        new_pos = show_jump(session, game_id, piece, pos)
+        if new_pos is not None:
+            future_jumps = []
+            # Recursively see if these can jump
+            for i in [-1, 1]:
+                # Either moving up the board or down the board
+                direction = 1
+                if piece.row > pos.row:
+                    direction = -1
+                future_jumps += try_jump(
+                    session,
+                    game_id,
+                    new_pos,
+                    Piece(new_pos.row + direction, new_pos.column + i)
+                )
+            # Add any future jumps
+            for path in future_jumps:
+                # Add the jump that got us here first
+                path.insert(0, new_pos)
+            # If no jumps are available in the future add this jump
+            if len(future_jumps) == 0:
+                jumps.append([new_pos])
+            else:
+                jumps = future_jumps
+
+    return jumps
+
+
 def get_moves(session: Session, game_id: int, piece: Piece):
     # Get the piece from the database if it exists
     # If it doesn't, don't handle the exception
     piece = piece.get_from_db(session, game_id)
 
     # Check the bounds
-    moves = []
+    potential_moves = []
     direction = 1
     # Check if it's the AI
     if not piece.player_owned():
@@ -154,60 +187,30 @@ def get_moves(session: Session, game_id: int, piece: Piece):
         # Correct direction for player movement or backwards movement for ai
         if piece.player_owned() or piece.king:
             if piece.column > 0:
-                moves.append([(Piece((piece.row + 1) * direction, piece.column - 1), False)])
+                potential_moves.append([(Piece((piece.row + 1) * direction, piece.column - 1), False)])
             if piece.column < DIMENSIONS - 1:
-                moves.append([(Piece((piece.row + 1) * direction, piece.column + 1), False)])
+                potential_moves.append([(Piece((piece.row + 1) * direction, piece.column + 1), False)])
     if piece.row > 0:
         # Correct direction for ai movement or backwards movement for player
         if not piece.player_owned() or piece.king:
             if piece.column > 0:
-                moves.append([(Piece((piece.row - 1) * direction, piece.column - 1), False)])
+                potential_moves.append([(Piece((piece.row - 1) * direction, piece.column - 1), False)])
             if piece.column < DIMENSIONS - 1:
-                moves.append([(Piece((piece.row - 1) * direction, piece.column + 1), False)])
+                potential_moves.append([(Piece((piece.row - 1) * direction, piece.column + 1), False)])
 
     # See if pieces already exist in those positions
-    removed = 0
-    for i, move in enumerate(moves.copy()):
-        m = move[0][0]
-        # Jump scenario
-        while m.exists(session, game_id):
-            pos = show_jump(session, piece, m)
-            while pos is not None:
-                if len(move) == 1:
-                    move[0] = (pos, True)
-                else:
-                    move.append((pos, True))
-                if piece.row < m.row:
-                    m = Piece(m.row + 1, )
-            # See if it's an enemy piece
-            if m.owner_id != piece.owner_id:
-                # Get the new position
-                new_row, new_column = 0, 0
-                # Make sure it's valid
-                if piece.row > m.row:
-                    new_row = piece.row - 2
-                else:
-                    new_row = piece.row + 2
-                if piece.column > m.column:
-                    new_column = piece.column - 2
-                else:
-                    new_column = piece.column + 2
-
-                # Make sure it's still in the bounds
-                if (0 < new_row < DIMENSIONS - 1) and (0 < new_column < DIMENSIONS - 1):
-                    new_pos = Piece(new_row, new_column)
-                    # See once again if this exists
-                    if not new_pos.exists(session, game_id):
-                        # Reset the move to here as a jump. True means is jump in the tuple
-                        move[-1] = (new_pos, True)
-                        # TODO finish this
-                        # if
-
-            # Remove invalid moves
-            moves.pop(i - removed)
-            removed += 1
-
-    for move in moves:
-        print(move[0][0].row, move[0][0].column)
+    moves = []
+    for move_paths in potential_moves.copy():
+        m = move_paths[0][0]
+        # Check Jump scenario
+        if m.exists(session, game_id):
+            current_jumps = try_jump(session, game_id, piece, m)
+            # Jumps exist so add them
+            if len(current_jumps) > 0:
+                moves += current_jumps
+        else:
+            # Add the single move
+            moves.append([m])
 
     session.commit()
+    return moves
