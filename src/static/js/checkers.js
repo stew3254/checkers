@@ -17,12 +17,12 @@ let params = {
 	token: getCookie("token"),
 		game_id: 1,
 	piece: {
-	column: 2,
 		row: 2,
+		column: 2,
 },
 	position: {
+		row: 3,
 		column: 1,
-			row: 3,
 	}
 };
 
@@ -32,7 +32,7 @@ let post_options = {
 }
 
 // Post to the API
-fetch(BASE_URL + "/api/place-move", post_options)
+fetch(BASE_URL + "api/make-move", post_options)
 	// Jsonify the result
 	.then(r => r.json())
 	// Actually do something with the result

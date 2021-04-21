@@ -58,10 +58,11 @@ def new_game(session: Session, user_id: str):
     return new_game_id
 
 
-def place_move(session: Session, game_id: int, piece: Piece, position: dict):
+def make_move(session: Session, game_id: int, piece: Piece, position: dict):
     # Get the piece from the database if it exists
     # If it doesn't, don't handle the exception
     piece = piece.get_from_db(session, game_id)
+    user = session.query(User).where(User.id == data.get("token")).scalar()
 
     # Make sure move is within bounds of the board
     if not (0 <= position["row"] <= DIMENSIONS and 0 <= position["column"] <= DIMENSIONS):
@@ -90,10 +91,34 @@ def place_move(session: Session, game_id: int, piece: Piece, position: dict):
     session.commit()
 
 
-# Determines if you can jump an already existing piece. If it can, it returns a piece
+def make_jump(session: Session, game_id: int, piece: Piece, position: dict, end_turn):
+    # Make sure to get a valid piece
+    piece = piece.get_from_db(session, game_id)
+    pos = Piece(**position).get_from_db(session, game_id)
+
+    # Try to see if we can jump
+    new_piece = show_jump(session, game_id, piece, pos)
+
+    # If we can't jump say we can't
+    if new_piece is None:
+        raise InvalidMove("cannot jump piece")
+    if end_turn:
+        user = session.query(User).where(User.id == piece.owner_id)
+        user.turn = False
+
+    # Update the piece position
+    piece.row, piece.column = new_piece.row, new_piece.column
+    state = session.query(BoardState).join(Piece).filter(BoardState.piece_id == pos.id).scalar()
+    session.query(Piece).filter(Piece.id == pos.id).delete(synchronize_session="fetch")
+    session.delete(state)
+
+    session.commit()
+
+
+# Determines if you can jump an already existing piece. If it can, it returns a piece location
 # Otherwise, it returns none
 def show_jump(session: Session, game_id: int, piece: Piece, pos: Piece):
-    pos.get_from_db(session, game_id)
+    pos = pos.get_from_db(session, game_id)
     # See if it's an enemy piece
     if piece.owner_id != pos.owner_id:
         # Get the new position
@@ -116,27 +141,6 @@ def show_jump(session: Session, game_id: int, piece: Piece, pos: Piece):
                 return new_pos
 
 
-# Tell if piece can move in a direction without looking at pieces on the board
-def can_move(session: Session, game_id: int, piece: Piece, forward: bool):
-    # Get all possible piece moves without jumps
-    if piece.player_owned():
-        if piece.row < DIMENSIONS - 1 and forward:
-            if 0 < piece.column < DIMENSIONS - 1:
-                return True
-        elif piece.row > 0 and not forward:
-            if piece.king:
-                if 0 < piece.column < DIMENSIONS - 1:
-                    return True
-    else:
-        if piece.row > 0 and forward:
-            if 0 < piece.column < DIMENSIONS - 1:
-                return True
-        elif piece.row < DIMENSIONS - 1 and not forward:
-            if piece.king:
-                if 0 < piece.column < DIMENSIONS - 1:
-                    return True
-
-
 # Returns a list of jumps it can make, otherwise returns none
 def try_jump(session: Session, game_id: int, piece: Piece, pos: Piece):
     # Jump scenario
@@ -144,28 +148,24 @@ def try_jump(session: Session, game_id: int, piece: Piece, pos: Piece):
     if pos.exists(session, game_id):
         new_pos = show_jump(session, game_id, piece, pos)
         if new_pos is not None:
-            future_jumps = []
             # Recursively see if these can jump
             for i in [-1, 1]:
                 # Either moving up the board or down the board
                 direction = 1
                 if piece.row > pos.row:
                     direction = -1
-                future_jumps += try_jump(
+                jumps += try_jump(
                     session,
                     game_id,
                     new_pos,
                     Piece(new_pos.row + direction, new_pos.column + i)
                 )
             # Add any future jumps
-            for path in future_jumps:
+            for path in jumps:
                 # Add the jump that got us here first
                 path.insert(0, new_pos)
-            # If no jumps are available in the future add this jump
-            if len(future_jumps) == 0:
-                jumps.append([new_pos])
-            else:
-                jumps = future_jumps
+            # Add the single jump as a path regardless
+            jumps.append([new_pos])
 
     return jumps
 

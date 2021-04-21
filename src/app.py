@@ -1,13 +1,14 @@
-import checkers
 import flask
 import jinja2
 import sqlalchemy as sqla
 import json
-import models
 import datetime
 from errors import *
 from sqlalchemy.orm import sessionmaker, scoped_session
 from sassutils.wsgi import SassMiddleware
+
+import checkers
+import models
 
 # Create the flask app
 app = flask.Flask(__name__)
@@ -103,28 +104,61 @@ def play():
     return resp
 
 
-@app.route("/api/place-move", methods=["POST"])
-def place_move():
+@app.route("/api/make-move", methods=["POST"])
+def make_move():
+    print(flask.request.data)
     data = json.loads(flask.request.data)
     # Create a piece from the json
     piece = models.Piece(**data["piece"])
 
     # Get the user
-    user = session.query(models.User).where(models.User.id == data["token"]).scalar()
+    user = session.query(models.User).where(models.User.id == data.get("token")).scalar()
     res = {}
 
     # Make sure it's the user's turn before trying to place a move
     if user.turn:
         try:
             # Attempt to place the move
-            checkers.place_move(session, data["game_id"], piece, data["position"])
+            checkers.make_move(session, data.get("game_id"), piece, data.get("position"))
             # Tell the user it's no longer their turn
             user.turn = False
             # TODO call AI here
         except InvalidPiece as e:
-            res = {"type": "error", "message": e}
+            res = {"type": "error", "message": str(e)}
         except InvalidMove as e:
-            res = {"type": "error", "message": e}
+            res = {"type": "error", "message": str(e)}
+    else:
+        res = {"type": "error", "message": "it is not your turn yet"}
+
+    session.commit()
+    return res
+
+
+@app.route("/api/make-jump", methods=["POST"])
+def make_jump():
+    print(flask.request.data)
+    data = json.loads(flask.request.data)
+    # Create a piece from the json
+    piece = models.Piece(**data["piece"])
+
+    # Get the user
+    user = session.query(models.User).where(models.User.id == data.get("token")).scalar()
+    if user is None:
+        return {"type": "error", "message": "invalid user token"}
+
+    res = {}
+
+    # Make sure it's the user's turn before trying to place a move
+    if user.turn:
+        try:
+            # Attempt to place the move
+            checkers.make_jump(session, data.get("game_id"), piece, data.get("position"), data.get("end_turn"))
+            # Tell the user it's no longer their turn
+            # TODO call AI here
+        except InvalidPiece as e:
+            res = {"type": "error", "message": str(e)}
+        except InvalidMove as e:
+            res = {"type": "error", "message": str(e)}
     else:
         res = {"type": "error", "message": "it is not your turn yet"}
 
