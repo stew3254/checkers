@@ -109,7 +109,7 @@ def make_move():
     print(flask.request.data)
     data = json.loads(flask.request.data)
     # Create a piece from the json
-    piece = models.Piece(**data["piece"])
+    piece = models.Piece(**data["piece"]).get_from_db(session, data.get("game_id"))
 
     # Get the user
     user = session.query(models.User).where(models.User.id == data.get("token")).scalar()
