@@ -6,6 +6,7 @@ import datetime
 from errors import *
 from sqlalchemy.orm import sessionmaker, scoped_session
 from sassutils.wsgi import SassMiddleware
+from base64 import b64encode as encode
 
 import checkers
 import models
@@ -24,13 +25,19 @@ app.wsgi_app = SassMiddleware(app.wsgi_app, {
 })
 
 # Connect to the database
-engine = sqla.create_engine("sqlite:///checkers.db?check_same_thread=False")
+engine = sqla.create_engine("postgresql+psycopg2://test:foobar@localhost:5001/checkers")
+# engine = sqla.create_engine("sqlite:///checkers.db?check_same_thread=False")
 conn = engine.connect()
 # Drop all tables to clean up old things (For debugging purposes uncomment this)
 models.Base.metadata.drop_all(engine)
 # Create all of the tables for the db if they don't already exist
 models.Base.metadata.create_all(engine)
 session = scoped_session(sessionmaker(bind=engine, autoflush=False, autocommit=False))()
+
+# Add the AI user
+user = models.User(encode(b"ai").decode(), datetime.datetime.now(), last_ip="localhost")
+session.add(user)
+session.commit()
 
 
 # Render the page to play the game
@@ -66,11 +73,11 @@ def play():
     # If they don't exist, make a new game
     if game_state is None:
         game_state = models.GameState()
-        game_state.game_id = checkers.new_game(session, user_id)
+        game_state.id = checkers.new_game(session, user_id)
 
     # Get the board states
     board_states = session.query(models.BoardState) \
-        .filter(models.BoardState.game_id == game_state.game_id) \
+        .filter(models.BoardState.game_id == game_state.id) \
         .all()
     session.commit()
 
@@ -106,43 +113,12 @@ def play():
 
 @app.route("/api/make-move", methods=["POST"])
 def make_move():
-    print(flask.request.data)
     data = json.loads(flask.request.data)
     # Create a piece from the json
     try:
         piece = models.Piece(**data["piece"]).get_from_db(session, data.get("game_id"))
     except InvalidPiece as e:
         return {"type": "error", "message": str(e)}
-
-    # Get the user
-    user = session.query(models.User).where(models.User.id == data.get("token")).scalar()
-    res = {}
-
-    # Make sure it's the user's turn before trying to place a move
-    if user.turn:
-        try:
-            # Attempt to place the move
-            checkers.make_move(session, data.get("game_id"), piece, data.get("position"))
-            # Tell the user it's no longer their turn
-            user.turn = False
-            # TODO call AI here
-        except InvalidPiece as e:
-            res = {"type": "error", "message": str(e)}
-        except InvalidMove as e:
-            res = {"type": "error", "message": str(e)}
-    else:
-        res = {"type": "error", "message": "it is not your turn yet"}
-
-    session.commit()
-    return res
-
-
-@app.route("/api/make-jump", methods=["POST"])
-def make_jump():
-    print(flask.request.data)
-    data = json.loads(flask.request.data)
-    # Create a piece from the json
-    piece = models.Piece(**data["piece"])
 
     # Get the user
     user = session.query(models.User).where(models.User.id == data.get("token")).scalar()
@@ -155,6 +131,45 @@ def make_jump():
     if user.turn:
         try:
             # Attempt to place the move
+            session.commit()
+            checkers.make_move(session, data.get("game_id"), piece, data.get("position"))
+            # Tell the user it's no longer their turn
+            user.turn = False
+            # TODO call AI here
+        except InvalidPiece as e:
+            res = {"type": "error", "message": str(e)}
+        except InvalidMove as e:
+            res = {"type": "error", "message": str(e)}
+    else:
+        res = {"type": "error", "message": "it is not your turn yet"}
+    session.commit()
+
+    return res
+
+
+@app.route("/api/make-jump", methods=["POST"])
+def make_jump():
+    data = json.loads(flask.request.data)
+    # Create a piece from the json
+    try:
+        piece = models.Piece(**data["piece"]).get_from_db(session, data.get("game_id"))
+    except InvalidPiece as e:
+        return {"type": "error", "message": str(e)}
+
+    # Get the user
+    token = data.get("token")
+    user = session.query(models.User).where(models.User.id == data.get("token")).scalar()
+    if user is None:
+        session.commit()
+        return {"type": "error", "message": "invalid user token"}
+
+    res = {}
+
+    # Make sure it's the user's turn before trying to place a move
+    if user.turn:
+        try:
+            # Attempt to place the move
+            session.commit()
             checkers.make_jump(session, data.get("game_id"), piece, data.get("position"), data.get("end_turn"))
             # Tell the user it's no longer their turn
             # TODO call AI here

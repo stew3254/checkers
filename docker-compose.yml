@@ -1,13 +1,22 @@
 version: "3"
 services:
-  web:
-    build: .
-    dns:
-      - 8.8.8.8
-      - 8.8.4.4
-    container_name: checkers
+  db:
+    image: postgres:latest
+    container_name: checkers_db
     ports:
-      - "5000:5000"
-    volumes:
-      - ./src:/srv/checkers/src
-    restart: on-failure
+      - "5001:5432"
+    environment:
+      - POSTGRES_USER=test
+      - POSTGRES_PASSWORD=foobar
+      - POSTGRES_DB=checkers
+#  web:
+#    build: .
+#    dns:
+#      - 8.8.8.8
+#      - 8.8.4.4
+#    container_name: checkers
+#    ports:
+#      - "5000:5000"
+#    volumes:
+#      - ./src:/srv/checkers/src
+

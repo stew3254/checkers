@@ -42,14 +42,15 @@ def new_game(session: Session, user_id: str):
         # Make sure it returns 0 instead of none
         sqla.func.coalesce(
             # Get the max board state
-            sqla.func.max(GameState.game_id),
+            sqla.func.max(GameState.id),
             0
         )
     ).scalar() + 1
 
     # Add players to the game and create them
-    game_states = [GameState(new_game_id, user_id), GameState(new_game_id, uid)]
+    game_states = [GameState(new_game_id, user_id)]
     session.add_all(game_states)
+    session.flush(game_states)
 
     # Add all of the board states for this game
     session.add_all(BoardState(new_game_id, piece.id) for piece in pieces)

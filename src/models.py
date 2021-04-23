@@ -39,6 +39,9 @@ class User(ABC, Base):
         self.last_played = last_played
         self.last_ip = last_ip
 
+    def __repr__(self):
+        return self.id
+
     def exists(self, session: Session):
         return session.query(sqla.exists().where(User.id == self.id)).scalar()
 
@@ -131,20 +134,19 @@ class Score(ABC, Base):
 class GameState(ABC, Base):
     __tablename__ = "game_states"
     id = sqla.Column("id", sqla.Integer, primary_key=True)
-    game_id = sqla.Column("game_id", sqla.Integer, nullable=False)
     user_id = sqla.Column("user_id", sqla.String, sqla.ForeignKey("users.id"), nullable=False)
     user = relation(User, backref=backref("users", lazy="joined"))
-    __table_args__ = (sqla.UniqueConstraint("game_id", "user_id", name="_game_user_uc"),)
+    __table_args__ = (sqla.UniqueConstraint("user_id", name="_game_user_uc"),)
 
     def __init__(self, game_id=None, user_id=None):
-        self.game_id = game_id
+        self.id = game_id
         self.user_id = user_id
 
 
 class BoardState(ABC, Base):
     __tablename__ = "board_states"
     id = sqla.Column("id", sqla.Integer, primary_key=True)
-    game_id = sqla.Column("game_id", sqla.Integer, sqla.ForeignKey("game_states.game_id"), nullable=False)
+    game_id = sqla.Column("game_id", sqla.Integer, sqla.ForeignKey("game_states.id"), nullable=False)
     piece_id = sqla.Column("piece_id", sqla.Integer, sqla.ForeignKey("pieces.id"), nullable=False)
     piece = relation(Piece, backref=backref("board_states", lazy="joined"))
 
