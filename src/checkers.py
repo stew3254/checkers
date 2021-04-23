@@ -62,7 +62,7 @@ def make_move(session: Session, game_id: int, piece: Piece, position: dict):
     # Get the piece from the database if it exists
     # If it doesn't, don't handle the exception
     piece = piece.get_from_db(session, game_id)
-    user = session.query(User).where(User.id == piece.user_id).scalar()
+    user = session.query(User).where(User.id == piece.owner_id).scalar()
 
     # Make sure move is within bounds of the board
     if not (0 <= position["row"] <= DIMENSIONS and 0 <= position["column"] <= DIMENSIONS):

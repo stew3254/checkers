@@ -27,7 +27,7 @@ app.wsgi_app = SassMiddleware(app.wsgi_app, {
 engine = sqla.create_engine("sqlite:///checkers.db?check_same_thread=False")
 conn = engine.connect()
 # Drop all tables to clean up old things (For debugging purposes uncomment this)
-# models.Base.metadata.drop_all(engine)
+models.Base.metadata.drop_all(engine)
 # Create all of the tables for the db if they don't already exist
 models.Base.metadata.create_all(engine)
 session = scoped_session(sessionmaker(bind=engine, autoflush=False, autocommit=False))()
@@ -109,7 +109,10 @@ def make_move():
     print(flask.request.data)
     data = json.loads(flask.request.data)
     # Create a piece from the json
-    piece = models.Piece(**data["piece"]).get_from_db(session, data.get("game_id"))
+    try:
+        piece = models.Piece(**data["piece"]).get_from_db(session, data.get("game_id"))
+    except InvalidPiece as e:
+        return {"type": "error", "message": str(e)}
 
     # Get the user
     user = session.query(models.User).where(models.User.id == data.get("token")).scalar()
