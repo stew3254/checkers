@@ -1,9 +1,9 @@
 import os
-from datetime import datetime
+import datetime
 from base64 import b64encode as encode
 from errors import *
 from sqlalchemy.exc import MultipleResultsFound
-from app import db
+from database import db
 
 Session = db.Session
 
@@ -27,7 +27,7 @@ class ABC:
 class User(ABC, db.Model):
     __tablename__ = "users"
     id = db.Column("id", db.String, primary_key=True)
-    last_played = db.Column("last_played", db.DateTime, nullable=False, default=datetime.utcnow())
+    last_played = db.Column("last_played", db.DateTime, nullable=False, default=datetime.datetime.utcnow())
     last_ip = db.Column("last_ip", db.String, nullable=False)
     turn = db.Column("turn", db.Boolean, nullable=False, default=True)
 
