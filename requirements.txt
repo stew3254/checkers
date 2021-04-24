@@ -4,3 +4,5 @@ jinja2
 libsass
 sqlalchemy
 psycopg2
+python-dotenv
+flask-sqlalchemy

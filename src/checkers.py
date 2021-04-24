@@ -64,6 +64,7 @@ def make_move(session: Session, game_id: int, piece: Piece, position: dict):
     # If it doesn't, don't handle the exception
     piece = piece.get_from_db(session, game_id)
     user = session.query(User).where(User.id == piece.owner_id).scalar()
+    session.commit()
 
     # Make sure move is within bounds of the board
     if not (0 <= position["row"] <= DIMENSIONS and 0 <= position["column"] <= DIMENSIONS):
@@ -99,6 +100,7 @@ def make_jump(session: Session, game_id: int, piece: Piece, position: dict, end_
 
     # Try to see if we can jump
     new_piece = show_jump(session, game_id, piece, pos)
+    print(new_piece)
 
     # If we can't jump say we can't
     if new_piece is None:
@@ -106,12 +108,17 @@ def make_jump(session: Session, game_id: int, piece: Piece, position: dict, end_
     if end_turn:
         user = session.query(User).where(User.id == piece.owner_id)
         user.turn = False
+        session.commit()
 
     # Update the piece position
     piece.row, piece.column = new_piece.row, new_piece.column
+    # Get the board state for the jumped piece
     state = session.query(BoardState).join(Piece).filter(BoardState.piece_id == pos.id).scalar()
-    session.query(Piece).filter(Piece.id == pos.id).delete(synchronize_session="fetch")
+    # Delete the spot on the board and tell the db it's deleted
     session.delete(state)
+    session.flush([state])
+    # Remove the piece from the db
+    session.query(Piece).filter(Piece.id == pos.id).delete(synchronize_session="fetch")
 
     session.commit()
 
