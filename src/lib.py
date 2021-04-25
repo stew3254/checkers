@@ -23,7 +23,8 @@ def create_user_cookie(resp, user_id):
         )
 
         # return the real user id
-        return user.id
+        user_id = user.id
+    return user_id
 
 
 def create_game_id(resp, game_id):
