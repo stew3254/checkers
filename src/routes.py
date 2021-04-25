@@ -16,7 +16,7 @@ def play():
     resp = flask.make_response()
     user_id = flask.request.cookies.get("token")
     # If the uid doesn't exist or is invalid, make a new one
-    create_user_cookie(resp, user_id)
+    user_id = create_user_cookie(resp, user_id)
 
     # Grab the game state
     game_state = db.session.query(GameState) \

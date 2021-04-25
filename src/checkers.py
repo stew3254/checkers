@@ -2,7 +2,16 @@ from models import *
 import sqlalchemy as sqla
 
 COLUMNS = "abcdefgh"
+import enum
+
 DIMENSIONS = 8
+
+
+class State(enum.Enum):
+    Win = 0
+    Loss = 1
+    Draw = 2
+    Playing = 2
 
 
 # Determines if you can jump an already existing piece. If it can, it returns a piece location
@@ -133,6 +142,7 @@ def new_game(session: Session, user_id: str, turn=True):
         else:
             i += 2
 
+    print(pieces)
     # Add all of the pieces to the table
     session.add_all(pieces)
     # Get the ids of the pieces that have been committed
@@ -254,3 +264,7 @@ def make_jump(session: Session, game_id: int, piece: Piece, position: dict, end_
     session.query(Piece).filter(Piece.id == pos.id).delete(synchronize_session="fetch")
 
     session.commit()
+
+
+def check_game_state(session: Session, game_id: int) -> State:
+    return State.Playing
