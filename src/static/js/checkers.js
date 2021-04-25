@@ -13,30 +13,28 @@ const getCookie = (cookieKey) => {
 	}
 }
 
-function make_move(piece, position, game_id) {
-
-}
-let params = {
-	token: getCookie("token"),
-		game_id: 1,
-	piece: {
-		row: 2,
-		column: 2,
-},
-	position: {
-		row: 3,
-		column: 1,
-	}
-};
-
-let post_options = {
-	method: "POST",
-	body: JSON.stringify(params)
-}
+function post(params) {
+	let post_options = {
+		method: "POST",
+		body: JSON.stringify(params)
+	};
 
 // Post to the API
-fetch(BASE_URL + "api/make-move", post_options)
-	// Jsonify the result
-	.then(r => r.json())
-	// Actually do something with the result
-	.then(r => console.log(r));
+	return fetch(BASE_URL + "api/make-move", post_options)
+		// Jsonify the result
+		.then(r => r.json());
+}
+
+function make_move(piece, position) {
+	post(
+		{
+			token: getCookie("token"),
+			game_id: getCookie("game_id"),
+			piece: piece,
+			position: position
+		}
+	).then(r => {
+		if (r.type === "error")
+			console.log(r);
+	})
+}
