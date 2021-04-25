@@ -41,7 +41,7 @@ socket.emit(
 		token: getCookie("token"),
 		game_id: 1,
 		piece: {
-			column: 0,
+			column: 2,
 			row: 2,
 		},
 		position: {
