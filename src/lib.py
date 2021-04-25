@@ -21,8 +21,9 @@ def create_user_cookie(resp, user_id):
             # This is bad practice, but I didn't want to set up proper authentication
             httponly=False
         )
-        # Fix the user id for later
-        user_id = user.id
+
+        # return the real user id
+        return user.id
 
 
 def create_game_id(resp, game_id):
