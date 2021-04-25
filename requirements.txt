@@ -3,4 +3,6 @@ pypugjs
 jinja2
 libsass
 sqlalchemy
-flask-socketio
+psycopg2
+python-dotenv
+flask-sqlalchemy

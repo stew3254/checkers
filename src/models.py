@@ -1,14 +1,11 @@
 import os
-from datetime import datetime
-import sqlalchemy as sqla
-from sqlalchemy.orm import relation, backref, Session
+import datetime
 from base64 import b64encode as encode
 from errors import *
-from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.exc import MultipleResultsFound
+from database import db
 
-# Define the base for everything to derive from
-Base = declarative_base()
+Session = db.Session
 
 
 class ABC:
@@ -27,20 +24,23 @@ class ABC:
     pass
 
 
-class User(ABC, Base):
+class User(ABC, db.Model):
     __tablename__ = "users"
-    id = sqla.Column("id", sqla.String, primary_key=True)
-    last_played = sqla.Column("last_played", sqla.DateTime, nullable=False, default=datetime.utcnow())
-    last_ip = sqla.Column("last_ip", sqla.String, nullable=False)
-    turn = sqla.Column("turn", sqla.Boolean, nullable=False, default=True)
+    id = db.Column("id", db.String, primary_key=True)
+    turn = db.Column("turn", db.Boolean, nullable=False, default=True)
+    last_played = db.Column("last_played", db.DateTime, nullable=False, default=datetime.datetime.utcnow())
+    last_ip = db.Column("last_ip", db.String, nullable=False)
 
     def __init__(self, user_id=None, last_played=None, last_ip=None):
         self.id = user_id
         self.last_played = last_played
         self.last_ip = last_ip
 
+    def __repr__(self):
+        return self.id
+
     def exists(self, session: Session):
-        return session.query(sqla.exists().where(User.id == self.id)).scalar()
+        return session.query(db.exists().where(User.id == self.id)).scalar()
 
     def create_unique(self, session: Session, user_id=None, last_played=None, last_ip=None, game_id=None):
         self.last_played = last_played
@@ -56,14 +56,14 @@ class User(ABC, Base):
         return self.id != encode(b"ai").decode()
 
 
-class Piece(ABC, Base):
+class Piece(ABC, db.Model):
     __tablename__ = "pieces"
-    id = sqla.Column("id", sqla.Integer, primary_key=True)
-    row = sqla.Column("row", sqla.SmallInteger, nullable=False)
-    column = sqla.Column("column", sqla.Integer, nullable=False)
-    king = sqla.Column("king", sqla.Boolean, nullable=False)
-    owner_id = sqla.Column("owner", sqla.ForeignKey("users.id"), index=True, nullable=False)
-    owner = relation(User, backref=backref("pieces", lazy="joined"))
+    id = db.Column("id", db.Integer, primary_key=True)
+    row = db.Column("row", db.SmallInteger, nullable=False)
+    column = db.Column("column", db.Integer, nullable=False)
+    king = db.Column("king", db.Boolean, nullable=False)
+    owner_id = db.Column("owner", db.ForeignKey("users.id"), index=True, nullable=False)
+    owner = db.relation(User, backref=db.backref("pieces", lazy="joined"))
 
     def __init__(self, row=None, column=None, owner_id=encode(b"ai").decode(), king=False, id=None):
         self.row = row
@@ -72,13 +72,17 @@ class Piece(ABC, Base):
         self.king = king
         self.id = id
 
+    def __repr__(self):
+        return f"{'Player' if self.player_owned() else 'AI'}" \
+               f"({self.row}, {self.column}, {'king' if self.king else 'normal'})"
+
     def player_owned(self):
         return self.owner_id != encode(b"ai").decode()
 
     def get_from_db(self, session: Session, game_id: int):
         # Check to see if the piece exists
         try:
-            res = session.query(Piece).join(BoardState).where(sqla.and_(
+            res = session.query(Piece).join(BoardState).where(db.and_(
                 Piece.row == self.row,
                 Piece.column == self.column,
                 BoardState.game_id == game_id
@@ -86,32 +90,38 @@ class Piece(ABC, Base):
             session.commit()
         # Got back too many pieces
         except MultipleResultsFound:
+            session.rollback()
             raise InvalidPiece("Too many pieces found, couldn't tell which to refer to")
         # Raise an exception if it doesn't exist
         if res is None:
+            session.rollback()
             raise InvalidPiece("Piece does not exist")
         return res
 
     def exists(self, session: Session, game_id=0):
         if self.id != 0 and self.id is not None:
-            res = session.query(sqla.exists().where(Piece.id == self.id)).scalar()
+            res = session.query(db.exists().where(Piece.id == self.id)).scalar()
         else:
-            res = session.query(sqla.exists().where(sqla.and_(
+            res = session.query(db.exists().where(db.and_(
                 Piece.row == self.row,
                 Piece.column == self.column,
                 BoardState.game_id == game_id
             ))).scalar()
+        session.commit()
         return res
 
+    def as_json(self):
+        return {"row": self.row, "column": self.column}
 
-class Score(ABC, Base):
+
+class Score(ABC, db.Model):
     __tablename__ = "scores"
-    id = sqla.Column("id", sqla.Integer, primary_key=True)
-    wins = sqla.Column("wins", sqla.Integer, nullable=False, default=0)
-    losses = sqla.Column("losses", sqla.Integer, nullable=False, default=0)
-    ties = sqla.Column("ties", sqla.Integer, nullable=False, default=0)
-    user_id = sqla.Column("user_id", sqla.ForeignKey("users.id"), nullable=False, default=True)
-    user = relation(User, backref=backref("scores", lazy="joined"))
+    id = db.Column("id", db.Integer, primary_key=True)
+    wins = db.Column("wins", db.Integer, nullable=False, default=0)
+    losses = db.Column("losses", db.Integer, nullable=False, default=0)
+    ties = db.Column("ties", db.Integer, nullable=False, default=0)
+    user_id = db.Column("user_id", db.ForeignKey("users.id"), nullable=False, default=True)
+    user = db.relation(User, backref=db.backref("scores", lazy="joined"))
 
     def __init__(self, wins=0, losses=0, ties=0, user_id=None):
         self.wins = wins
@@ -120,27 +130,25 @@ class Score(ABC, Base):
         self.user_id = user_id
 
 
-class GameState(ABC, Base):
+class GameState(ABC, db.Model):
     __tablename__ = "game_states"
-    id = sqla.Column("id", sqla.Integer, primary_key=True)
-    game_id = sqla.Column("game_id", sqla.Integer, nullable=False)
-    user_id = sqla.Column("user_id", sqla.String, sqla.ForeignKey("users.id"), nullable=False)
-    user = relation(User, backref=backref("users", lazy="joined"))
-    __table_args__ = (sqla.UniqueConstraint("game_id", "user_id", name="_game_user_uc"),)
+    id = db.Column("id", db.Integer, primary_key=True)
+    user_id = db.Column("user_id", db.String, db.ForeignKey("users.id"), nullable=False)
+    user = db.relation(User, backref=db.backref("users", lazy="joined"))
+    __table_args__ = (db.UniqueConstraint("user_id", name="_game_user_uc"),)
 
     def __init__(self, game_id=None, user_id=None):
-        self.game_id = game_id
+        self.id = game_id
         self.user_id = user_id
 
 
-class BoardState(ABC, Base):
+class BoardState(ABC, db.Model):
     __tablename__ = "board_states"
-    id = sqla.Column("id", sqla.Integer, primary_key=True)
-    game_id = sqla.Column("game_id", sqla.Integer, sqla.ForeignKey("game_states.game_id"), nullable=False)
-    piece_id = sqla.Column("piece_id", sqla.Integer, sqla.ForeignKey("pieces.id"), nullable=False)
-    piece = relation(Piece, backref=backref("board_states", lazy="joined"))
+    id = db.Column("id", db.Integer, primary_key=True)
+    game_id = db.Column("game_id", db.Integer, db.ForeignKey("game_states.id"), nullable=False)
+    piece_id = db.Column("piece_id", db.Integer, db.ForeignKey("pieces.id"), nullable=False)
+    piece = db.relation(Piece, backref=db.backref("board_states", lazy="joined"))
 
     def __init__(self, game_id=None, piece_id=None):
         self.game_id = game_id
         self.piece_id = piece_id
-
