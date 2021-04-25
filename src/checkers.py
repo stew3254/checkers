@@ -268,3 +268,10 @@ def make_jump(session: Session, game_id: int, piece: Piece, position: dict, end_
 
 def check_game_state(session: Session, game_id: int) -> State:
     return State.Playing
+
+
+def board_state(session: Session, game_id: int) -> list:
+    board_states = session.query(BoardState).where(BoardState.game_id == game_id).all()
+    session.commit()
+    pieces = [state.piece for state in board_states]
+    return pieces
