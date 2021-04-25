@@ -27,9 +27,9 @@ class ABC:
 class User(ABC, db.Model):
     __tablename__ = "users"
     id = db.Column("id", db.String, primary_key=True)
+    turn = db.Column("turn", db.Boolean, nullable=False, default=True)
     last_played = db.Column("last_played", db.DateTime, nullable=False, default=datetime.datetime.utcnow())
     last_ip = db.Column("last_ip", db.String, nullable=False)
-    turn = db.Column("turn", db.Boolean, nullable=False, default=True)
 
     def __init__(self, user_id=None, last_played=None, last_ip=None):
         self.id = user_id

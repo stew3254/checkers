@@ -2,12 +2,12 @@ mixin place_piece(pos, dim, piece)
   if piece != None
       if not piece.player_owned()
         if piece.king
-          .piece.ai_piece.king_piece
+          .piece.king_piece.ai_piece
         else
           .piece.ai_piece
       else
         if piece.king
-          .piece.player_piece.king_piece
+          .piece.king_piece.player_piece
         else
           .piece.player_piece
 

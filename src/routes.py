@@ -6,8 +6,14 @@ import checkers
 from models import *
 from database import db
 
-routes = flask.Blueprint("routes", __name__,)
+routes = flask.Blueprint("routes", __name__, )
 
+
+# @routes.route("/", methods=["GET"])
+# def play():
+#     user_id = flask.request.cookies.get("token")
+#     # If the uid doesn't exist or is invalid, make a new one
+#     if user_id is None or not db.session.query(db.exists().where(User.id == user_id)).scalar():
 
 # Render the page to play the game
 @routes.route("/", methods=["GET"])
@@ -81,6 +87,50 @@ def play():
     return resp
 
 
+@routes.route("/api/new-game", methods=["POST"])
+def new_game():
+    data = {}
+    if flask.request.data:
+        data = json.loads(flask.request.data)
+    else:
+        # This handles form data posts
+        data = flask.request.form.to_dict()
+    choice = data.get("player_choice")
+    if choice is None:
+        return {"type": "error", "message": "You must submit a player_choice"}, 400
+    if choice != "first" and choice != "second":
+        return {"type": "error", "message": "You must either go first or second"}, 400
+
+    # See if the user exists
+    user_id = flask.request.cookies.get("token")
+    if user_id is not None:
+        user = db.session.query(User).where(User.id == user_id).scalar()
+        if user is not None:
+            game_state = db.session.query(GameState).where(GameState.user_id == user_id).scalar()
+            if game_state is not None:
+                board_states = db.session.query(BoardState)\
+                                .where(BoardState.game_id == game_state.id).all()
+                piece_ids = [i.piece_id for i in board_states]
+                pieces = db.session.query(Piece).filter(Piece.id.in_(piece_ids)).all()
+                # Delete the board states
+                [db.session.delete(i) for i in board_states]
+                # Flush so we can delete the rest of the things
+                db.session.flush(board_states)
+                # Delete the pieces and game
+                [db.session.delete(i) for i in pieces]
+                db.session.delete(game_state)
+                # Make the new game
+                checkers.new_game(db.session, user_id)
+            if choice == "first":
+                user.turn = True
+            else:
+                user.turn = False
+        db.session.commit()
+    # If the player's token is invalid just tell them it's okay anyways
+    # This is for security reasons
+    return {"type": "message", "message": "new game has been started"}
+
+
 @routes.route("/api/make-move", methods=["POST"])
 def make_move():
     data = json.loads(flask.request.data)
@@ -108,7 +158,6 @@ def make_move():
             checkers.make_move(db.session, data.get("game_id"), piece, data.get("position"))
             # Tell the user it's no longer their turn
             user.turn = False
-            # TODO call AI here
         except InvalidPiece as e:
             res = ({"type": "error", "message": str(e)}, 400)
         except InvalidMove as e:
@@ -146,8 +195,6 @@ def make_jump():
             # Attempt to place the move
             db.session.commit()
             checkers.make_jump(db.session, data.get("game_id"), piece, data.get("position"), data.get("end_turn"))
-            # Tell the user it's no longer their turn
-            # TODO call AI here
         except InvalidPiece as e:
             res = ({"type": "error", "message": str(e)}, 400)
         except InvalidMove as e:

@@ -13,6 +13,9 @@ const getCookie = (cookieKey) => {
 	}
 }
 
+function make_move(piece, position, game_id) {
+
+}
 let params = {
 	token: getCookie("token"),
 		game_id: 1,
