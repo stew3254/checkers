@@ -146,6 +146,7 @@ def make_move():
             checkers.make_move(db.session, game_id, piece, data.get("position"))
             # Tell the user it's no longer their turn
             user.turn = False
+            db.session.commit()
             # Run the ai
             ai = running_ai.get(game_id)
             if ai is None:
@@ -198,6 +199,7 @@ def make_jump():
             checkers.make_jump(db.session, game_id, piece, data.get("position"), data.get("end_turn"))
             if not user.turn:
                 # Run the ai
+                db.session.commit()
                 ai = running_ai.get(game_id)
                 if ai is None:
                     ai = AI(game_id)

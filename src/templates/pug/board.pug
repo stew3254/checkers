@@ -1,15 +1,15 @@
-mixin place_piece(pos, dim, piece)
+mixin place_piece(pos, piece)
   if piece != None
       if not piece.player_owned()
         if piece.king
-          .piece.king_piece.ai_piece
+          .piece.king_piece.ai_piece(id="piece_"+str(piece.id))
         else
-          .piece.ai_piece
+          .piece.ai_piece(id="piece_"+str(piece.id))
       else
         if piece.king
-          .piece.king_piece.player_piece
+          .piece.king_piece.player_piece(id="piece_"+str(piece.id))
         else
-          .piece.player_piece
+          .piece.player_piece(id="piece_"+str(piece.id))
 
 
 .board
@@ -25,12 +25,12 @@ mixin place_piece(pos, dim, piece)
          .board_tile.white(id= "board_tile_"+tile_name)
        else
          .board_tile.black(id= "board_tile_"+tile_name)
-            +place_piece(pos, dim, piece)
+            +place_piece(pos, piece)
      else
        if int(tile/dim) % 2 == 0
          //- This can't have spaces since pypugjs is stupid and won't work otherwise
          .board_tile.black(id= "board_tile_"+tile_name)
-            +place_piece(pos, dim, piece)
+            +place_piece(pos, piece)
        else
         .board_tile.white(id= "board_tile_"+tile_name)
 
