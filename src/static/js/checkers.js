@@ -28,12 +28,10 @@ function post(params, path) {
 function make_move(piece, position) {
 	post(
 		{
-			token: getCookie("token"),
-			game_id: getCookie("game_id"),
 			piece: piece,
 			position: position
 		},
-		"/api/make-move"
+		"api/make-move"
 	).then(r => {
 		if (r.type === "error")
 			console.log(r);
@@ -43,13 +41,11 @@ function make_move(piece, position) {
 function make_jump(piece, position, end_turn) {
 	post(
 		{
-			token: getCookie("token"),
-			game_id: Number(getCookie("game_id")),
 			piece: piece,
 			position: position,
 			end_turn: end_turn
 		},
-		"/api/make-jump"
+		"api/make-jump"
 	).then(r => {
 		if (r.type === "error")
 			console.log(r);

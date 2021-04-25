@@ -6,6 +6,7 @@ import checkers
 from models import *
 from database import db
 from lib import create_user_cookie
+from ai import running_ai, AI
 
 routes = flask.Blueprint("routes", __name__, )
 
@@ -63,6 +64,8 @@ def play():
         score=score
     ).encode()]
 
+    running_ai.update({game_state.id: AI(game_state.id)})
+
     return resp
 
 
@@ -113,15 +116,21 @@ def new_game():
 @routes.route("/api/make-move", methods=["POST"])
 def make_move():
     data = json.loads(flask.request.data)
+    try:
+        game_id = int(flask.request.cookies.get("game_id"))
+    except ValueError:
+        return {"type": "error", "message": "invalid game id"}, 400
+
     # Create a piece from the json
     try:
-        piece = Piece(**data["piece"]).get_from_db(db.session, data.get("game_id"))
+        piece = Piece(**data["piece"]).get_from_db(db.session, game_id)
     except InvalidPiece as e:
         db.session.rollback()
         return {"type": "error", "message": str(e)}, 400
 
     # Get the user
-    user = db.session.query(User).where(User.id == data.get("token")).scalar()
+    user_id = flask.request.cookies.get("token")
+    user = db.session.query(User).where(User.id == user_id).scalar()
     db.session.commit()
     if user is None:
         db.session.commit()
@@ -134,9 +143,17 @@ def make_move():
         try:
             # Attempt to place the move
             db.session.commit()
-            checkers.make_move(db.session, data.get("game_id"), piece, data.get("position"))
+            checkers.make_move(db.session, game_id, piece, data.get("position"))
             # Tell the user it's no longer their turn
             user.turn = False
+            # Run the ai
+            ai = running_ai.get(game_id)
+            if ai is None:
+                ai = AI(game_id)
+                running_ai.update({game_id: ai})
+            ai.evaluate()
+            # It's the user's turn again
+            user.turn = True
         except InvalidPiece as e:
             res = ({"type": "error", "message": str(e)}, 400)
         except InvalidMove as e:
@@ -151,16 +168,21 @@ def make_move():
 @routes.route("/api/make-jump", methods=["POST"])
 def make_jump():
     data = json.loads(flask.request.data)
+    try:
+        game_id = int(flask.request.cookies.get("game_id"))
+    except ValueError:
+        return {"type": "error", "message": "invalid game id"}, 400
+
     # Create a piece from the json
     try:
-        piece = Piece(**data["piece"]).get_from_db(db.session, data.get("game_id"))
+        piece = Piece(**data["piece"]).get_from_db(db.session, game_id)
     except InvalidPiece as e:
         db.session.rollback()
         return {"type": "error", "message": str(e)}, 400
 
     # Get the user
-    token = data.get("token")
-    user = db.session.query(User).where(User.id == data.get("token")).scalar()
+    user_id = flask.request.cookies.get("token")
+    user = db.session.query(User).where(User.id == user_id).scalar()
     db.session.commit()
     if user is None:
         db.session.commit()
@@ -173,7 +195,15 @@ def make_jump():
         try:
             # Attempt to place the move
             db.session.commit()
-            checkers.make_jump(db.session, data.get("game_id"), piece, data.get("position"), data.get("end_turn"))
+            checkers.make_jump(db.session, game_id, piece, data.get("position"), data.get("end_turn"))
+            if not user.turn:
+                # Run the ai
+                ai = running_ai.get(game_id)
+                if ai is None:
+                    ai = AI(game_id)
+                    running_ai.update({game_id: ai})
+                ai.evaluate()
+                user.turn = True
         except InvalidPiece as e:
             res = ({"type": "error", "message": str(e)}, 400)
         except InvalidMove as e:
@@ -183,6 +213,7 @@ def make_jump():
 
     db.session.commit()
     return res
+
 
 
 @routes.route("/api/available-moves", methods=["GET"])
