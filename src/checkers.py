@@ -62,9 +62,9 @@ def try_jump(session: Session, game_id: int, piece: Piece, pos: Piece):
             # Add any future jumps
             for path in jumps:
                 # Add the jump that got us here first
-                path.insert(0, new_pos)
+                path.insert(0, pos)
             # Add the single jump as a path regardless
-            jumps.append([new_pos])
+            jumps.append([pos])
 
     return jumps
 
@@ -78,19 +78,19 @@ def get_moves(session: Session, game_id: int, piece: Piece):
         direction = -1
 
     # Get all possible piece moves without jumps
-    if piece.row <= DIMENSIONS - 1:
+    if piece.row < DIMENSIONS - 1:
         # Correct direction for player movement or backwards movement for ai
         if piece.player_owned() or piece.king:
-            if piece.column >= 0:
+            if piece.column > 0:
                 potential_moves.append([(Piece((piece.row + 1) * direction, piece.column - 1), False)])
-            if piece.column <= DIMENSIONS - 1:
+            if piece.column < DIMENSIONS - 1:
                 potential_moves.append([(Piece((piece.row + 1) * direction, piece.column + 1), False)])
     if piece.row > 0:
         # Correct direction for ai movement or backwards movement for player
         if not piece.player_owned() or piece.king:
-            if piece.column >= 0:
+            if piece.column > 0:
                 potential_moves.append([(Piece((piece.row - 1) * direction, piece.column - 1), False)])
-            if piece.column <= DIMENSIONS - 1:
+            if piece.column < DIMENSIONS - 1:
                 potential_moves.append([(Piece((piece.row - 1) * direction, piece.column + 1), False)])
 
     # See if pieces already exist in those positions
@@ -274,5 +274,4 @@ def check_game_state(session: Session, game_id: int) -> State:
 def board_state(session: Session, game_id: int) -> list:
     board_states = session.query(BoardState).where(BoardState.game_id == game_id).all()
     session.commit()
-    pieces = [state.piece for state in board_states]
-    return pieces
+    return [state.piece for state in board_states]

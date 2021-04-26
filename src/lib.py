@@ -31,7 +31,6 @@ def create_game_id(resp, game_id):
     print(game_id)
     # If the uid doesn't exist or is invalid, make a new one
     if game_id is not None and db.session.query(db.exists().where(GameState.id == game_id)).scalar():
-        db.session.commit()
         # Set cookie to expire 4 weeks from now if not used
         resp.set_cookie(
             "game_id",
@@ -40,4 +39,4 @@ def create_game_id(resp, game_id):
             secure=True,
             httponly=True
         )
-        # Fix the user id for later
+    db.session.commit()
