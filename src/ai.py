@@ -1,9 +1,15 @@
 import checkers
 from database import db
+from models import *
 
 session = db.session
 
 running_ai = {}
+
+
+def __new_game():
+    user = User().create_unique(session)
+    checkers.new_game(session, user.id)
 
 
 class AI:
