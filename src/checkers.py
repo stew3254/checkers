@@ -78,19 +78,19 @@ def get_moves(session: Session, game_id: int, piece: Piece):
         direction = -1
 
     # Get all possible piece moves without jumps
-    if piece.row < DIMENSIONS - 1:
+    if piece.row <= DIMENSIONS - 1:
         # Correct direction for player movement or backwards movement for ai
         if piece.player_owned() or piece.king:
-            if piece.column > 0:
+            if piece.column >= 0:
                 potential_moves.append([(Piece((piece.row + 1) * direction, piece.column - 1), False)])
-            if piece.column < DIMENSIONS - 1:
+            if piece.column <= DIMENSIONS - 1:
                 potential_moves.append([(Piece((piece.row + 1) * direction, piece.column + 1), False)])
     if piece.row > 0:
         # Correct direction for ai movement or backwards movement for player
         if not piece.player_owned() or piece.king:
-            if piece.column > 0:
+            if piece.column >= 0:
                 potential_moves.append([(Piece((piece.row - 1) * direction, piece.column - 1), False)])
-            if piece.column < DIMENSIONS - 1:
+            if piece.column <= DIMENSIONS - 1:
                 potential_moves.append([(Piece((piece.row - 1) * direction, piece.column + 1), False)])
 
     # See if pieces already exist in those positions

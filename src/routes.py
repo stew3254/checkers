@@ -5,7 +5,7 @@ import json
 import checkers
 from models import *
 from database import db
-from lib import create_user_cookie
+from lib import create_user_cookie, create_game_id
 from ai import running_ai, AI
 
 routes = flask.Blueprint("routes", __name__, )
@@ -30,6 +30,11 @@ def play():
     if game_state is None:
         game_state = GameState()
         game_state.id = checkers.new_game(db.session, user_id)
+
+    # Give the user a cookie
+    if flask.request.cookies.get("game_id") != str(game_state.id):
+        create_game_id(resp, game_state.id)
+
 
     # Get the board states
     board_states = db.session.query(BoardState) \
@@ -217,10 +222,24 @@ def make_jump():
     return res
 
 
-
 @routes.route("/api/available-moves", methods=["GET"])
 def get_moves():
-    moves = checkers.get_moves(db.session, 1, Piece(3, 1))
+    data = flask.request.args
+    print(data)
+    # Get game id
+    try:
+        game_id = int(flask.request.cookies.get("game_id"))
+    except ValueError:
+        return {"type": "error", "message": "invalid game id"}, 400
+
+    try:
+        row = int(data.get("row"))
+        column = int(data.get("column"))
+        piece = Piece(row, column).get_from_db(db.session, game_id)
+    except (ValueError, InvalidPiece):
+        return {"type": "error", "message": "invalid piece"}, 400
+
+    moves = checkers.get_moves(db.session, game_id, piece)
     return {
         "type": "moves",
         "message": "The list of move paths available for this move",

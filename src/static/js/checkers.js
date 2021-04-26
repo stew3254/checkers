@@ -36,6 +36,18 @@ function getPosition(e) {
 	return convertPosition(id.slice(id.length - 2));
 }
 
+function get(params, path) {
+	let post_options = {
+		method: "GET",
+		body: JSON.stringify(params)
+	};
+
+// Post to the API
+	return fetch(BASE_URL + path, post_options)
+		// Jsonify the result
+		.then(r => r.json());
+}
+
 function post(params, path) {
 	let post_options = {
 		method: "POST",
@@ -144,6 +156,17 @@ function selectTile(tile) {
 		}
 	}
 }
+
+function getMoves(piece) {
+	get(piece, "api/available-moves").then(r => {
+		console.log(r)
+	})
+}
+
+getMoves({
+	row: 2,
+	column: 2,
+})
 
 // Get all pieces
 let pieces = $(".piece");
