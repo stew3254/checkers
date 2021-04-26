@@ -9,8 +9,8 @@ running_ai = {}
 
 def __new_game():
     user = User().create_unique(session)
-    checkers.new_game(session, user.id)
 
+    return checkers.new_game(session, user.id)
 
 class AI:
     def __init__(self, game_id: int):
@@ -20,8 +20,7 @@ class AI:
     def get_heurisitc(moves):
         heuristic = 0
         if moves == []:
-            return heuristic
-        else:
+            heuristic = 0
 
         return heuristic
         #pass
