@@ -22,11 +22,12 @@ class AI:
 
     def make_move(self):
         # This can be a checkers.make_jump() or checkers.make_move()
+        heuristic = []
         session_state = checkers.check_game_state(session, self.game_id)
         pieces = checkers.board_state(session_state, self.game_id)
         for piece in pieces:
             moves = checkers.get_moves(session, self.game_id, piece)
-            self.get_heuristic(moves)
+            heuristic.append(self.get_heuristic(moves))
             print(moves)
         pass
 
