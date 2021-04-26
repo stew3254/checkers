@@ -48,6 +48,17 @@ function post(params, path) {
 		.then(r => r.json());
 }
 
+function restart() {
+	let action = "first"
+	let firstPlayer = $("#first_player");
+	console.log(firstPlayer.attr("checked"))
+	if (firstPlayer.attr("checked") !== "checked") {
+		action = "second";
+	}
+	post({player_choice: action}, "api/new-game")
+		.then(() => window.location.reload());
+}
+
 function makeMove(piece, position) {
 	post(
 		{
@@ -88,10 +99,14 @@ function makeJump(piece, position, end_turn) {
 function selectPiece(piece) {
 	if (piece.hasClass("player_piece")) {
 		// Update global piece
-		if (selectedPiece != null)
-			selectedPiece.css({border: "none"});
+		if (selectedPiece != null) {
+			if (selectedPiece.hasClass("king_piece"))
+				selectedPiece.css({border: ".2rem solid gold"});
+			else
+				selectedPiece.css({border: "none"});
+		}
 		selectedPiece = piece;
-		piece.css({border: ".4rem solid white"});
+		piece.css({border: ".2rem solid white"});
 	} else {
 		// Trying to select an ai piece
 		if (selectedPiece != null) {
@@ -116,10 +131,15 @@ function selectTile(tile) {
 		// No pieces on this tile
 		if (children.length === 0) {
 			let piecePos = getPosition(selectedPiece);
-			console.log(piecePos, pos);
 			// See if the tile is next to it
 			if (Math.abs(piecePos.row - pos.row) === 1) {
 				makeMove(piecePos, pos);
+			}
+		} else {
+			let piecePos = getPosition(selectedPiece);
+			// See if the tile is next to it
+			if (Math.abs(piecePos.row - pos.row) === 1) {
+				makeJump(piecePos, pos, false);
 			}
 		}
 	}
@@ -140,3 +160,7 @@ let tiles = $(".board_tile.black");
 tiles.each((index, tile) => {
 	tile.onclick = () => selectTile($(tile));
 });
+
+// Register the restart button
+const restartBtn = $("#restart");
+restartBtn.on("click", restart);

@@ -170,7 +170,7 @@ def new_game(session: Session, user_id: str, turn=True):
 
 
 def try_king(session: Session, piece: Piece):
-    if not piece.king:
+    if piece.king:
         return
     if ((piece.player_owned() and piece.row == DIMENSIONS - 1) or
             (not piece.player_owned() and piece.row == 0)):
@@ -247,7 +247,7 @@ def make_jump(session: Session, game_id: int, piece: Piece, position: dict, end_
                     continue
                 break
         if not can_jump:
-            user = session.query(User).where(User.id == piece.owner_id)
+            user = session.query(User).where(User.id == piece.owner_id).scalar()
             user.turn = False
             session.commit()
 
@@ -262,6 +262,9 @@ def make_jump(session: Session, game_id: int, piece: Piece, position: dict, end_
     session.query(Piece).filter(Piece.id == pos.id).delete(synchronize_session="fetch")
 
     session.commit()
+
+    # See if the piece is now a king
+    try_king(session, piece)
 
 
 def check_game_state(session: Session, game_id: int) -> State:

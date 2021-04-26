@@ -29,14 +29,13 @@ html(lang="en")
           include board
       .container_flex
         h1.turn It's your turn
-        form(action="/api/new-game" method="POST")
-          h3 Restart the game?
-          .container
-            input#first_player(type="radio", value="first", name="player_choice", checked)
-            label(for="first_player") Play with starting move
-          .container
-            input#second_player(type="radio", value="second" name="player_choice")
-            label(for="second_player") Play with AI starting
-          input(type="submit", value="Restart")
+        h3 Restart the game?
+        .container
+          input#first_player(type="radio", value="first", name="player_choice", checked)
+          label(for="first_player") Play with starting move
+        .container
+          input#second_player(type="radio", value="second" name="player_choice")
+          label(for="second_player") Play with AI starting
+        button#restart Restart
     script(src="https://ajax.googleapis.com/ajax/libs/jquery/3.5.1/jquery.min.js")
     script(src="/static/js/checkers.js")
