@@ -142,7 +142,6 @@ def new_game(session: Session, user_id: str, turn=True):
         else:
             i += 2
 
-    print(pieces)
     # Add all of the pieces to the table
     session.add_all(pieces)
     # Get the ids of the pieces that have been committed
@@ -225,7 +224,6 @@ def make_jump(session: Session, game_id: int, piece: Piece, position: dict, end_
 
     # Try to see if we can jump
     new_piece = show_jump(session, game_id, piece, pos)
-    print(new_piece)
 
     # If we can't jump say we can't
     if new_piece is None:

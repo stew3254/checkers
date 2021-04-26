@@ -38,7 +38,7 @@ with app.app_context():
     db.init_app(app)
 
     # Drop all tables for debugging
-    db.drop_all()
+    # db.drop_all()
     # Make all tables
     db.create_all()
 
