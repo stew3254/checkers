@@ -35,7 +35,6 @@ def play():
     if flask.request.cookies.get("game_id") != str(game_state.id):
         create_game_id(resp, game_state.id)
 
-
     # Get the board states
     board_states = db.session.query(BoardState) \
         .filter(BoardState.game_id == game_state.id) \

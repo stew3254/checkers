@@ -40,3 +40,10 @@ def create_game_id(resp, game_id):
             httponly=True
         )
     db.session.commit()
+
+
+def as_dict(pos: tuple):
+    return {
+        "row": pos[0],
+        "column": pos[1]
+    }

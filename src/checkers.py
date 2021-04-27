@@ -14,10 +14,13 @@ class State(enum.Enum):
     Playing = 2
 
 
+def exists(board: dict, piece: Piece):
+    return board.get((piece.row, piece.column)) is not None
+
+
 # Determines if you can jump an already existing piece. If it can, it returns a piece location
 # Otherwise, it returns none
-def show_jump(session: Session, game_id: int, piece: Piece, pos: Piece):
-    pos = pos.get_from_db(session, game_id)
+def show_jump(board: dict, piece: Piece, pos: Piece):
     # See if it's an enemy piece
     if piece.owner_id != pos.owner_id:
         # Get the new position
@@ -35,29 +38,28 @@ def show_jump(session: Session, game_id: int, piece: Piece, pos: Piece):
         # Make sure it's still in the bounds
         if (0 < new_row < DIMENSIONS) and (0 < new_column < DIMENSIONS):
             new_pos = Piece(new_row, new_column, piece.owner_id)
-            # See once again if this exists
-            if not new_pos.exists(session, game_id):
+            # See if this exists
+            if not exists(board, new_pos):
                 return new_pos
 
 
 # Returns a list of jumps it can make, otherwise returns none
-def try_jump(session: Session, game_id: int, piece: Piece, pos: Piece):
+def check_jump(board: dict, piece: Piece, pos: Piece):
     # Jump scenario
     jumps = []
-    if pos.exists(session, game_id):
-        new_pos = show_jump(session, game_id, piece, pos)
-        if new_pos is not None:
+    if exists(board, pos):
+        new_piece = show_jump(board, piece, pos)
+        if new_piece is not None:
             # Recursively see if these can jump
             for i in [-1, 1]:
                 # Either moving up the board or down the board
                 direction = 1
                 if piece.row > pos.row:
                     direction = -1
-                jumps += try_jump(
-                    session,
-                    game_id,
-                    new_pos,
-                    Piece(new_pos.row + direction, new_pos.column + i)
+                jumps += check_jump(
+                    board,
+                    new_piece,
+                    Piece(new_piece.row + direction, new_piece.column + i)
                 )
             # Add any future jumps
             for path in jumps:
@@ -69,7 +71,7 @@ def try_jump(session: Session, game_id: int, piece: Piece, pos: Piece):
     return jumps
 
 
-def get_moves(session: Session, game_id: int, piece: Piece):
+def get_moves(board: dict, piece: Piece):
     # Check the bounds
     potential_moves = []
     direction = 1
@@ -98,8 +100,8 @@ def get_moves(session: Session, game_id: int, piece: Piece):
     for move_paths in potential_moves.copy():
         m = move_paths[0][0]
         # Check Jump scenario
-        if m.exists(session, game_id):
-            current_jumps = try_jump(session, game_id, piece, m)
+        if exists(board, m):
+            current_jumps = check_jump(board, piece, m)
             # Jumps exist so add them
             if len(current_jumps) > 0:
                 moves += current_jumps
@@ -107,7 +109,6 @@ def get_moves(session: Session, game_id: int, piece: Piece):
             # Add the single move
             moves.append([m])
 
-    session.commit()
     return moves
 
 
@@ -169,14 +170,103 @@ def new_game(session: Session, user_id: str, turn=True):
     return new_game_id
 
 
-def try_king(session: Session, piece: Piece):
+def make_king(session: Session, piece: Piece):
+    # Do nothing if it is already a king
     if piece.king:
         return
+    # Make sure it's on a valid piece
     if ((piece.player_owned() and piece.row == DIMENSIONS - 1) or
             (not piece.player_owned() and piece.row == 0)):
         # King the piece
         piece.king = True
         session.commit()
+
+
+def try_king(piece: Piece):
+    # Do nothing if it is already a king
+    if piece.king:
+        return
+    # Make sure it's on a valid piece
+    if ((piece.player_owned() and piece.row == DIMENSIONS - 1) or
+            (not piece.player_owned() and piece.row == 0)):
+        # King the piece
+        piece.king = True
+    return piece
+
+
+def try_move(board: dict, piece: Piece, pos: tuple):
+    # Destructure tuple so it's easier to read
+    row, column = pos
+
+    # Make sure move is within bounds of the board
+    if not (0 <= row <= DIMENSIONS and 0 <= column <= DIMENSIONS):
+        raise InvalidMove("Cannot place move off of the board")
+
+    # Get correct movement direction
+    direction = 1
+    if piece.owner_id == encode(b"ai").decode():
+        direction = -1
+
+    # Get tiles moves
+    row_diff = direction * (row - piece.row)
+    col_diff = column - piece.column
+    if abs(row_diff) != 1 or abs(col_diff) != 1:
+        raise InvalidMove("Tried to move too many spaces")
+    elif row_diff != 1 and not piece.king:
+        raise InvalidMove("Cannot move non-king pieces backwards")
+
+    # See if a piece is already there or not
+    if board.get((row, column)) is not None:
+        raise InvalidMove("Another piece is already here")
+
+    # Remove the position of this piece
+    del board[(piece.row, piece.column)]
+    # Update the position in the piece itself for consistency
+    piece.row, piece.column = row, column
+    # See if the piece is now a king
+    piece = try_king(piece)
+    # Update the piece in the board state
+    board[(piece.row, piece.column)] = piece
+
+    # return the new board state
+    return board
+
+
+def try_jump(board: dict, piece: Piece, pos: tuple, end_turn: bool):
+    # Try to see if we can jump
+    new_pos = show_jump(board, piece, pos)
+
+    # If we can't jump say we can't
+    if new_pos is None:
+        raise InvalidMove("cannot jump piece")
+    can_jump = False
+    if not end_turn:
+        moves = get_moves(board, new_pos)
+        if len(moves) != 0:
+            direction = pos.row - piece.row
+
+            for path in moves:
+                for move in path:
+                    if (new_pos.row + 2) * direction == move.row:
+                        can_jump = True
+                        break
+                else:
+                    continue
+                break
+
+    # Delete the piece from the current position before moving
+    del board[(piece.row, piece.column)]
+    # Delete the piece that got jumped
+    del board[pos]
+    # Update the piece position
+    piece.row, piece.column = new_pos.row, new_pos.column
+    # See if the piece is now a king
+    piece = try_king(piece)
+    # Add the piece back to the board state
+    board[(piece.row, piece.column)] = piece
+
+    # Return the board state
+    return board
 
 
 def make_move(session: Session, game_id: int, piece: Piece, position: dict):
@@ -214,7 +304,7 @@ def make_move(session: Session, game_id: int, piece: Piece, position: dict):
     session.commit()
 
     # See if the piece is now a king
-    try_king(session, piece)
+    make_king(session, piece)
 
 
 def make_jump(session: Session, game_id: int, piece: Piece, position: dict, end_turn):
@@ -222,8 +312,10 @@ def make_jump(session: Session, game_id: int, piece: Piece, position: dict, end_
     piece = piece.get_from_db(session, game_id)
     pos = Piece(**position).get_from_db(session, game_id)
 
+    board = board_state(session, game_id)
+
     # Try to see if we can jump
-    new_piece = show_jump(session, game_id, piece, pos)
+    new_piece = show_jump(board, piece, pos)
 
     # If we can't jump say we can't
     if new_piece is None:
@@ -233,7 +325,7 @@ def make_jump(session: Session, game_id: int, piece: Piece, position: dict, end_
         user.turn = False
         session.commit()
     else:
-        moves = get_moves(session, game_id, new_piece)
+        moves = get_moves(board, new_piece)
         can_jump = False
         if len(moves) != 0:
             direction = pos.row - piece.row
@@ -264,14 +356,14 @@ def make_jump(session: Session, game_id: int, piece: Piece, position: dict, end_
     session.commit()
 
     # See if the piece is now a king
-    try_king(session, piece)
+    make_king(session, piece)
 
 
-def check_game_state(session: Session, game_id: int) -> State:
+def check_game_state(board: dict) -> State:
     return State.Playing
 
 
-def board_state(session: Session, game_id: int) -> list:
+def board_state(session: Session, game_id: int) -> dict:
     board_states = session.query(BoardState).where(BoardState.game_id == game_id).all()
     session.commit()
-    return [state.piece for state in board_states]
+    return {(state.piece.row, state.piece.column): state.piece for state in board_states}
