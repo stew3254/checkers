@@ -40,29 +40,16 @@ class AI:
     def evaluate(self):
         board = checkers.board_state(session, self.game_id)
         ai_pieces = [i for i in board.values() if not i.player_owned()]
-        # See which piece can take a move
-        ai_moves = []
-
-        def sort_move(m):
-            score = len(m) * 100
-            if score == 100:
-                if not checkers.exists(board, m[0]):
-                    score = 1
-            return score
 
         for piece in ai_pieces:
             moves = checkers.get_moves(board, piece)
-            moves.sort(key=sort_move, reverse=True)
+            # Find the first piece that can take a move and just take the first move
             if len(moves) > 0:
-                ai_moves.append((piece, moves))
-
-        # Get the very best move out of all possible moves
-        ai_moves.sort(key=lambda x: len(x[1][0]), reverse=True)
-        # Make the best move
-        move = ai_moves[0][1][0][0]
-        piece = ai_moves[0][0]
-        print(ai_moves)
-        # if move.player_owned():
-        #     checkers.make_jump(session, self.game_id, piece, {"row": move.row, "column": move.column}, True)
-        # else:
-        #     checkers.make_move(session, self.game_id, piece, move)
+                move = moves[0][0]
+                # See if it's a jump
+                if checkers.exists(board, move):
+                    checkers.make_jump(session, self.game_id, piece, move.as_json(), True)
+                    return
+                else:
+                    checkers.make_move(session, self.game_id, piece, move.as_json())
+                    return
