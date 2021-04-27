@@ -318,9 +318,17 @@ def make_jump(session: Session, game_id: int, piece: Piece, position: dict, end_
     if new_piece is None:
         raise InvalidMove("cannot jump piece")
     if end_turn:
-        user = session.query(User).where(User.id == piece.owner_id)
-        user.turn = False
-        session.commit()
+        if piece.player_owned():
+            user = session.query(User).where(User.id == piece.owner_id).scalar()
+            user.turn = False
+            session.commit()
+        else:
+            user = session.query(User).join(GameState).where(sqla.and_(
+                GameState.id == game_id,
+                GameState.user_id != piece.owner_id
+            )).scalar()
+            user.turn = True
+            session.commit()
     else:
         moves = get_moves(board, new_piece)
         can_jump = False

@@ -213,7 +213,7 @@ def make_jump():
                 ai = running_ai.get(game_id)
                 if ai is None:
                     ai = AI(game_id)
-                    running_ai.update({game_id: ai})
+                    running_ai[game_id] = ai
                 ai.evaluate()
                 user.turn = True
         except InvalidPiece as e:

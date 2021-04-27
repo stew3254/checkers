@@ -1,10 +1,15 @@
+import random
+import time
+
 import checkers
 from database import db
 from models import *
 from functools import reduce
+from random import randint
 
 session = db.session
 running_ai = {}
+random.seed(time.time())
 
 
 class AI:
@@ -40,12 +45,14 @@ class AI:
     def evaluate(self):
         board = checkers.board_state(session, self.game_id)
         ai_pieces = [i for i in board.values() if not i.player_owned()]
+        ai_pieces.sort(key=lambda x: random.random() % 100)
 
         for piece in ai_pieces:
             moves = checkers.get_moves(board, piece)
-            # Find the first piece that can take a move and just take the first move
+            # Find the first piece that can take a move and just take a random move
             if len(moves) > 0:
-                move = moves[0][0]
+                path = moves[randint(0, len(moves) - 1)]
+                move = path[randint(0, len(path) - 1)]
                 # See if it's a jump
                 if checkers.exists(board, move):
                     checkers.make_jump(session, self.game_id, piece, move.as_json(), True)
