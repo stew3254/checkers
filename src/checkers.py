@@ -72,26 +72,22 @@ def check_jump(board: dict, piece: Piece, pos: Piece):
 def get_moves(board: dict, piece: Piece):
     # Check the bounds
     potential_moves = []
-    direction = 1
-    # Check if it's the AI
-    if not piece.player_owned():
-        direction = -1
 
     # Get all possible piece moves without jumps
     if piece.row < DIMENSIONS - 1:
         # Correct direction for player movement or backwards movement for ai
         if piece.player_owned() or piece.king:
             if piece.column > 0:
-                potential_moves.append([Piece(piece.row + (1 * direction), piece.column - 1)])
+                potential_moves.append([Piece(piece.row + 1, piece.column - 1)])
             if piece.column < DIMENSIONS - 1:
-                potential_moves.append([Piece(piece.row + (1 * direction), piece.column + 1)])
+                potential_moves.append([Piece(piece.row + 1, piece.column + 1)])
     if piece.row > 0:
         # Correct direction for ai movement or backwards movement for player
         if not piece.player_owned() or piece.king:
             if piece.column > 0:
-                potential_moves.append([Piece(piece.row - (1 * direction), piece.column - 1)])
+                potential_moves.append([Piece(piece.row - 1, piece.column - 1)])
             if piece.column < DIMENSIONS - 1:
-                potential_moves.append([Piece(piece.row - (1 * direction), piece.column + 1)])
+                potential_moves.append([Piece(piece.row - 1, piece.column + 1)])
 
     # See if pieces already exist in those positions
     moves = []
@@ -108,7 +104,7 @@ def get_moves(board: dict, piece: Piece):
                 moves += current_jumps
         else:
             # Add the single move
-            moves.append([m])
+            moves.append([temp])
 
     return moves
 

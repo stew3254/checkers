@@ -59,6 +59,14 @@ def play():
         db.session.add(score)
     db.session.commit()
 
+    running_ai[game_state.id] = AI(game_state.id)
+    user = db.session.query(User).where(User.id == user_id).scalar()
+    if not user.turn:
+        # Have the ai take its turn
+        running_ai[game_state.id].evaluate()
+        user.turn = True
+    db.session.commit()
+
     # Hijack the response to fix the template
     resp.response = [flask.render_template(
         "checkers.pug",
@@ -67,8 +75,6 @@ def play():
         pieces=pieces,
         score=score
     ).encode()]
-
-    running_ai.update({game_state.id: AI(game_state.id)})
 
     return resp
 
