@@ -238,7 +238,8 @@ def get_moves():
     except (ValueError, InvalidPiece):
         return {"type": "error", "message": "invalid piece"}, 400
 
-    moves = checkers.get_moves(db.session, game_id, piece)
+    board = checkers.board_state(db.session, game_id)
+    moves = checkers.get_moves(board, piece)
     return {
         "type": "moves",
         "message": "The list of move paths available for this move",

@@ -1,7 +1,5 @@
 from models import *
 import sqlalchemy as sqla
-
-COLUMNS = "abcdefgh"
 import enum
 
 DIMENSIONS = 8
@@ -36,7 +34,7 @@ def show_jump(board: dict, piece: Piece, pos: Piece):
             new_column = piece.column + 2
 
         # Make sure it's still in the bounds
-        if (0 < new_row < DIMENSIONS) and (0 < new_column < DIMENSIONS):
+        if (0 <= new_row < DIMENSIONS) and (0 <= new_column < DIMENSIONS):
             new_pos = Piece(new_row, new_column, piece.owner_id)
             # See if this exists
             if not exists(board, new_pos):
@@ -84,23 +82,26 @@ def get_moves(board: dict, piece: Piece):
         # Correct direction for player movement or backwards movement for ai
         if piece.player_owned() or piece.king:
             if piece.column > 0:
-                potential_moves.append([(Piece((piece.row + 1) * direction, piece.column - 1), False)])
+                potential_moves.append([Piece(piece.row + (1 * direction), piece.column - 1)])
             if piece.column < DIMENSIONS - 1:
-                potential_moves.append([(Piece((piece.row + 1) * direction, piece.column + 1), False)])
+                potential_moves.append([Piece(piece.row + (1 * direction), piece.column + 1)])
     if piece.row > 0:
         # Correct direction for ai movement or backwards movement for player
         if not piece.player_owned() or piece.king:
             if piece.column > 0:
-                potential_moves.append([(Piece((piece.row - 1) * direction, piece.column - 1), False)])
+                potential_moves.append([Piece(piece.row - (1 * direction), piece.column - 1)])
             if piece.column < DIMENSIONS - 1:
-                potential_moves.append([(Piece((piece.row - 1) * direction, piece.column + 1), False)])
+                potential_moves.append([Piece(piece.row - (1 * direction), piece.column + 1)])
 
     # See if pieces already exist in those positions
     moves = []
     for move_paths in potential_moves.copy():
-        m = move_paths[0][0]
-        # Check Jump scenario
-        if exists(board, m):
+        # Try to place real piece in if possible
+        temp = move_paths[0]
+        m = board.get((temp.row, temp.column))
+        if m is not None:
+            move_paths[0] = m
+            # Check the jump scenario
             current_jumps = check_jump(board, piece, m)
             # Jumps exist so add them
             if len(current_jumps) > 0:
