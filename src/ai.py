@@ -31,13 +31,14 @@ class AI:
     "This function takes a single piece as its argument"
     "For this piece it will calculate a heuristic for all possible moves"
     "Returns a tuple who's first element is a list of possible moves for this piece"
-    "The second element is the heuristic value for the best move for this piece"
+    "The second element is the index value in Moves that contains the best move for this piece"
     "The Third element is the average of all move heuristic values"
     "Avg is the heuristic value for this given piece"
     def get_best_move(self, piece):
 
         #records which move has highest heuristic for this piece
         highest_move = 0
+        highest_move_idex = 0
         piece_heuristic = []
 
         "retrieve the current board"
@@ -46,6 +47,7 @@ class AI:
         #contains a list of possible moves for this specific piece
         moves = checkers.get_moves(board, piece)
         print("MOVES for Piece: ", moves)
+        #[[Empty(4, 2, normal)], [Empty(4, 4, normal)]]
 
         #if there are no possible moves the heuristic for best move is 0
         if moves == []:
@@ -56,7 +58,6 @@ class AI:
         elif moves != []:
             for move in moves:
                 print("Move: ", move)
-                print("Move Heuristic: ", self.get_move_heuristic(move))
                 #returns heuristic for given move
                 piece_heuristic.append(self.get_move_heuristic(move))
 
@@ -69,7 +70,7 @@ class AI:
         elif len(piece_heuristic) == 0:
             Avg = sum(piece_heuristic)
 
-        return (moves, highest_move, Avg)
+        return (moves, highest_move_idex, Avg)
 
     "This Function looks at the Game board and calculates heuristics"
     "For each of a players pieces and available moves to that piece"
@@ -109,8 +110,9 @@ class AI:
             #this is the Piece we want to move
             if Piece_heuristic == Highest:
                 if len(Moves) > 0:
-                    path = Moves[randint(0, len(Moves) - 1)]
-                    move = path[randint(0, len(path) - 1)]
+                    for move in Moves:
+                        path = Moves
+                        move = path[randint(0, len(path) - 1)]
 
                 # See if it's a jump
                 if checkers.exists(board, move):
