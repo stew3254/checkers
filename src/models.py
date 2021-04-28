@@ -75,12 +75,12 @@ class Piece(ABC, db.Model):
     def __repr__(self):
         owner = ""
         if self.owner_id is None:
-            owner = "None"
+            owner = "Empty"
         elif self.player_owned():
             owner = "Player"
         else:
             owner = "AI"
-        return f"{owner}({self.row}, {self.column}, {'king' if self.king else 'normal'})"
+        return f"{owner}({self.row}, {self.column}, {'king' if self.king else 'non-king'})"
 
     def player_owned(self):
         return self.owner_id != encode(b"ai").decode()
