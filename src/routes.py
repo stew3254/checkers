@@ -5,7 +5,7 @@ import json
 import checkers
 from models import *
 from database import db
-from lib import create_user_cookie
+from lib import create_user_cookie, create_game_id
 from ai import running_ai, AI
 
 routes = flask.Blueprint("routes", __name__, )
@@ -31,6 +31,10 @@ def play():
         game_state = GameState()
         game_state.id = checkers.new_game(db.session, user_id)
 
+    # Give the user a cookie
+    if flask.request.cookies.get("game_id") != str(game_state.id):
+        create_game_id(resp, game_state.id)
+
     # Get the board states
     board_states = db.session.query(BoardState) \
         .filter(BoardState.game_id == game_state.id) \
@@ -55,6 +59,14 @@ def play():
         db.session.add(score)
     db.session.commit()
 
+    running_ai[game_state.id] = AI(game_state.id)
+    user = db.session.query(User).where(User.id == user_id).scalar()
+    if not user.turn:
+        # Have the ai take its turn
+        running_ai[game_state.id].evaluate()
+        user.turn = True
+    db.session.commit()
+
     # Hijack the response to fix the template
     resp.response = [flask.render_template(
         "checkers.pug",
@@ -63,8 +75,6 @@ def play():
         pieces=pieces,
         score=score
     ).encode()]
-
-    running_ai.update({game_state.id: AI(game_state.id)})
 
     return resp
 
@@ -203,7 +213,7 @@ def make_jump():
                 ai = running_ai.get(game_id)
                 if ai is None:
                     ai = AI(game_id)
-                    running_ai.update({game_id: ai})
+                    running_ai[game_id] = ai
                 ai.evaluate()
                 user.turn = True
         except InvalidPiece as e:
@@ -217,10 +227,25 @@ def make_jump():
     return res
 
 
-
 @routes.route("/api/available-moves", methods=["GET"])
 def get_moves():
-    moves = checkers.get_moves(db.session, 1, Piece(3, 1))
+    data = flask.request.args
+    print(data)
+    # Get game id
+    try:
+        game_id = int(flask.request.cookies.get("game_id"))
+    except ValueError:
+        return {"type": "error", "message": "invalid game id"}, 400
+
+    try:
+        row = int(data.get("row"))
+        column = int(data.get("column"))
+        piece = Piece(row, column).get_from_db(db.session, game_id)
+    except (ValueError, InvalidPiece):
+        return {"type": "error", "message": "invalid piece"}, 400
+
+    board = checkers.board_state(db.session, game_id)
+    moves = checkers.get_moves(board, piece)
     return {
         "type": "moves",
         "message": "The list of move paths available for this move",

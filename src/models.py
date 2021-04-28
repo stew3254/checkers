@@ -65,7 +65,7 @@ class Piece(ABC, db.Model):
     owner_id = db.Column("owner", db.ForeignKey("users.id"), index=True, nullable=False)
     owner = db.relation(User, backref=db.backref("pieces", lazy="joined"))
 
-    def __init__(self, row=None, column=None, owner_id=encode(b"ai").decode(), king=False, id=None):
+    def __init__(self, row=None, column=None, owner_id=None, king=False, id=None):
         self.row = row
         self.column = column
         self.owner_id = owner_id
@@ -73,8 +73,14 @@ class Piece(ABC, db.Model):
         self.id = id
 
     def __repr__(self):
-        return f"{'Player' if self.player_owned() else 'AI'}" \
-               f"({self.row}, {self.column}, {'king' if self.king else 'normal'})"
+        owner = ""
+        if self.owner_id is None:
+            owner = "None"
+        elif self.player_owned():
+            owner = "Player"
+        else:
+            owner = "AI"
+        return f"{owner}({self.row}, {self.column}, {'king' if self.king else 'normal'})"
 
     def player_owned(self):
         return self.owner_id != encode(b"ai").decode()
