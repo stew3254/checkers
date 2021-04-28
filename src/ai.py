@@ -31,13 +31,14 @@ class AI:
     "This function takes a single piece as its argument"
     "For this piece it will calculate a heuristic for all possible moves"
     "Returns a tuple who's first element is a list of possible moves for this piece"
-    "The second element is the heuristic value for the best move for this piece"
+    "The second element is the index value in Moves containing the best move for this piece"
     "The Third element is the average of all move heuristic values"
     "Avg is the heuristic value for this given piece"
     def get_best_move(self, piece):
 
         #records which move has highest heuristic for this piece
         highest_move = 0
+        move_index = 0
         piece_heuristic = []
 
         "retrieve the current board"
@@ -69,7 +70,7 @@ class AI:
         elif len(piece_heuristic) == 0:
             Avg = sum(piece_heuristic)
 
-        return (moves, highest_move, Avg)
+        return (moves, move_index, Avg)
 
     "This Function looks at the Game board and calculates heuristics"
     "For each of a players pieces and available moves to that piece"
