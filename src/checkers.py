@@ -39,57 +39,12 @@ def show_jump(board: dict, piece: Piece, pos: Piece):
             # See if this exists
             if not exists(board, new_pos):
                 return new_pos
+
 # Provided a specific piece and position
 # This method returns a list of enemy piecies that can jump
 # The Provided game piece in the paramaters
 def possible_jumped(session: Session, game_id: int, piece: Piece, pos: Piece):
-
-    jumped = 0
-    check_spot_row, check_spot_column = 0,0
-
-    " Check TILE 1 "
-    check_spot_row = piece.row - 1
-    check_spot_column = piece.column - 1
-    check_spot = Piece(check_spot_row, check_spot_column)
-    check_spot = check_spot.get_from_db(session, game_id)
-
-    if check_spot is not None:
-        if check_spot.owner_id != piece.owner_id:
-            jumped = jumped + 1
-
-    " Check TILE 2 "
-    check_spot_row, check_spot_column = 0, 0
-    check_spot_row = piece.row + 1
-    check_spot_column = piece - 1
-    check_spot = Piece(check_spot_row, check_spot_column)
-    check_spot = check_spot.get_from_db(session, game_id)
-
-    if check_spot is not None:
-        if check_spot.owner_id != piece.owner_id:
-            jumped = jumped + 1
-    " Check TILE 3 "
-    check_spot_row, check_spot_column = 0, 0
-    check_spot_row = piece.row + 1
-    check_spot_column = piece + 1
-    check_spot = Piece(check_spot_row, check_spot_column)
-    check_spot = check_spot.get_from_db(session, game_id)
-
-    if check_spot is not None:
-        if check_spot.owner_id != piece.owner_id:
-            jumped = jumped + 1
-
-    " Check TILE 4 "
-    check_spot_row, check_spot_column = 0, 0
-    check_spot_row = piece.row - 1
-    check_spot_column = piece + 1
-    check_spot = Piece(check_spot_row, check_spot_column)
-    check_spot = check_spot.get_from_db(session, game_id)
-
-    if check_spot is not None:
-        if check_spot.owner_id != piece.owner_id:
-            jumped = jumped + 1
-
-    return jumped
+    return
 
 # Returns a list of jumps it can make, otherwise returns none
 def check_jump(board: dict, piece: Piece, pos: Piece):

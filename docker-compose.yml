@@ -6,10 +6,10 @@ services:
     ports:
       - "5001:5432"
     env_file: .env
-#  web:
-#    container_name: checkers
-#    build: .
-#    ports:
-#      - "5000:5000"
-#    volumes:
-#      - ./src:/srv/checkers/src
+  web:
+    container_name: checkers
+    build: .
+    ports:
+      - "5000:5000"
+    volumes:
+      - ./src:/srv/checkers/src
