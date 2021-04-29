@@ -47,7 +47,7 @@ class AI:
     "This function takes a single piece as its argument"
     "For this piece it will calculate a heuristic for all possible moves"
     "Returns a tuple who's first element is a list of possible moves for this piece"
-    "The second element is the heuristic value for the best move for this piece"
+    "The second element is the index value in moves which contains best move for this piece"
     "The Third element is the average of all move heuristic values"
     "Avg is the heuristic value for this given piece"
 
@@ -55,7 +55,7 @@ class AI:
 
         # records which move has highest heuristic for this piece
         highest_move = 0
-        move_index = 0
+        move_index = -1
         piece_heuristic = []
 
         "retrieve the current board"
@@ -63,12 +63,14 @@ class AI:
 
         # contains a list of possible moves for this specific piece
         moves = checkers.get_moves(board, piece)
+        #[[Empty(4, 2, non-king)], [Empty(4, 4, king)]]
         print("MOVES for Piece: ", moves)
 
         # if there are no possible moves the heuristic for best move is 0
         if len(moves) == 0:
             highest_move = 0
             moves = []
+            move_index = 0
 
         # if there are possible moves we must calculate the heuristic for each move available
         elif len(moves) > 0:
@@ -78,16 +80,19 @@ class AI:
                 # returns heuristic for given move
                 piece_heuristic.append(self.get_move_heuristic(move))
 
-            for idx, move in piece_heuristic:
+            for idx, move in enumerate(piece_heuristic):
                 if move > highest_move:
                     highest_move = move
+                    move_index = idx
 
         if len(piece_heuristic) != 0:
             avg = sum(piece_heuristic) / len(piece_heuristic)
         elif len(piece_heuristic) == 0:
             avg = sum(piece_heuristic)
+        print("Length: ", len(moves))
+        print("INDEX: ", move_index)
 
-        return (moves, highest_move, avg)
+        return (moves, move_index, avg)
 
     "This Function looks at the Game board and calculates heuristics"
     "For each of a players pieces and available moves to that piece"
@@ -117,23 +122,27 @@ class AI:
 
         # Loop that finds the Piece with the highest heuristic
         highest = 0
-        highest_idx = -1
-        for idx, moves, move_heuristic, piece_heuristic in enumerate(piece_heuristics):
+        piece_index = -1
+        for idx, (moves, move_index, piece_heuristic) in enumerate(piece_heuristics):
             if piece_heuristic > highest:
                 highest = piece_heuristic
-                highest_idx = idx
+                piece_index = idx
+        print("Piece index: ", piece_index)
+        print("PIECE: ", piece_heuristics[piece_index])
 
-        # Loop that looks at the piece we need to move and moves it to the best move av
-        moves, move_heuristic, piece_heuristic = piece_heuristics[highest_idx]
-        # Grab the first path and first move
-        # TODO these needs to be changed to fir the algorithm correctly
-        path = moves[0]
-        move = path[0]
+        # Generate tuple for piece to move contains list of possible moves
+        # index for the best move and heuristic for the piece
+        (moves, move_index, piece_heuristic) = piece_heuristics[piece_index]
+        print("Piece: ", (moves, move_index, piece_heuristic))
+
+        #position piece needs to move to
+        #Path is:  [Empty(4, 2, non-king)]
+        path = moves[move_index]
+        print("PATH: ", path)
 
         # See if it's a jump
-        if checkers.exists(board, move):
-            checkers.make_jump(session, self.game_id, piece, move.as_json(), True)
-            return
+        if checkers.exists(board, path[0]):
+            return checkers.make_jump(session, self.game_id, ai_pieces[piece_index], path[0].as_json(), True)
         else:
-            checkers.make_move(session, self.game_id, piece, move.as_json())
-            return
+            return checkers.make_move(session, self.game_id, ai_pieces[piece_index], path[0].as_json())
+
