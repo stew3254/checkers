@@ -41,9 +41,13 @@ def show_jump(board: dict, piece: Piece, pos: Piece):
                 return new_pos
 
 # Provided a specific piece and position
-# This method returns a list of enemy piecies that can jump
-# The Provided game piece in the paramaters
-def possible_jumped(session: Session, game_id: int, piece: Piece, pos: Piece):
+# This method returns a Boolean variable
+# True if the piece provided can be jumped
+# False if the piece provided can not be jumped
+def can_be_jumped(Piece):
+
+
+
     return
 
 # Returns a list of jumps it can make, otherwise returns none
