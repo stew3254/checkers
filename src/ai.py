@@ -13,6 +13,7 @@ session = db.session
 running_ai = {}
 random.seed(time.time())
 
+
 # function negamax(node, depth, α, β, color) is
 #     if depth = 0 or node is a terminal node then
 #         return color × the heuristic value of node
@@ -40,7 +41,7 @@ class AI:
 
     def get_move_heuristic(self, move, piece):
 
-        #Will change to Zero when done for now it start random
+        # Will change to Zero when done for now it start random
         move_heuristic = random.randint(0, 9)
         print("MOVE: ", move)
         print("PIECE KING? ", piece.king)
@@ -49,10 +50,10 @@ class AI:
         # print("COLUMN: ", move[0].column)
         # print("PIECE STATUS: ", move[0].king)
 
-        #Heuristic for when piece being moves is a King
+        # Heuristic for when piece being moves is a King
         if piece.king:
             # When path is Non-Jump
-            if move[0].owner_id == None:
+            if move[0].owner_id is None:
                 move_heuristic = move_heuristic + 1
             # When path is Jump
             else:
@@ -61,19 +62,18 @@ class AI:
                 if move[0].king:
                     move_heuristic = move_heuristic + 30
 
-
         # Heuristic for when Piece being moves is not a King
         elif not piece.king:
             # Heuristic for Calculating if a Piece is Closer to being a King
             move_heuristic = move_heuristic + (7 - move[0].row)
 
-            #When path is Non-Jump
-            if move[0].owner_id == None:
+            # When path is Non-Jump
+            if move[0].owner_id is None:
                 move_heuristic = move_heuristic + 1
-            #When path is Jump
+            # When path is Jump
             else:
                 move_heuristic = move_heuristic + 10
-                #When A King Piece can Be Jumped
+                # When A King Piece can Be Jumped
                 if move[0].king:
                     move_heuristic = move_heuristic + 30
 
@@ -101,7 +101,7 @@ class AI:
 
         # contains a list of possible moves for this specific piece
         moves = checkers.get_moves(board, piece)
-        #[[Empty(4, 2, non - king)], [Empty(4, 4, king)]]
+        # [[Empty(4, 2, non - king)], [Empty(4, 4, king)]]
         print("MOVES for Piece: ", moves)
 
         # if there are no possible moves the heuristic for best move is 0
@@ -130,7 +130,7 @@ class AI:
         print("Length: ", len(moves))
         print("INDEX: ", move_index)
 
-        return (moves, move_index, avg)
+        return moves, move_index, avg
 
     "This Function looks at the Game board and calculates heuristics"
     "For each of a players pieces and available moves to that piece"
@@ -173,8 +173,8 @@ class AI:
         (moves, move_index, piece_heuristic) = piece_heuristics[piece_index]
         print("Piece: ", (moves, move_index, piece_heuristic))
 
-        #position piece needs to move to
-        #Path is:  [Empty(4, 2, non-king)]
+        # position piece needs to move to
+        # Path is:  [Empty(4, 2, non-king)]
         path = moves[move_index]
         print("PATH: ", path)
 
@@ -183,4 +183,3 @@ class AI:
             return checkers.make_jump(session, self.game_id, ai_pieces[piece_index], path[0].as_json(), True)
         else:
             return checkers.make_move(session, self.game_id, ai_pieces[piece_index], path[0].as_json())
-
