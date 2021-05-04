@@ -39,7 +39,27 @@ class AI:
     "Returns a value for this potential move"
 
     def get_move_heuristic(self, move):
+
+        #Will change to Zero when done for now it start random
         move_heuristic = random.randint(0, 9)
+        print("MOVE: ", move)
+        # print("ROW: ", move[0].row)
+        # print("STATUS: ", move[0].owner_id)
+        # print("COLUMN: ", move[0].column)
+        # print("PIECE STATUS: ", move[0].king)
+
+        if move[0].owner_id == None:
+            move_heuristic = move_heuristic + 1
+        else:
+            move_heuristic = move_heuristic + 10
+
+        if not move[0].king:
+            print("I am not a king")
+            move_heuristic = move_heuristic + (7 - move[0].row)
+        else:
+            print("I am a king")
+            move_heuristic = move_heuristic
+        ##[Empty(4, 2, non - king)]
         print("MOVE VALUE: ", move_heuristic)
 
         return move_heuristic
@@ -63,7 +83,7 @@ class AI:
 
         # contains a list of possible moves for this specific piece
         moves = checkers.get_moves(board, piece)
-        #[[Empty(4, 2, non-king)], [Empty(4, 4, king)]]
+        #[, [Empty(4, 4, king)]]
         print("MOVES for Piece: ", moves)
 
         # if there are no possible moves the heuristic for best move is 0
