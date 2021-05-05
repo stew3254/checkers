@@ -1,45 +1,95 @@
-import checkers
-from database import db
-from models import *
 import random
 import time
 import checkers
-from database import db
+import sqlalchemy as sqla
 from models import *
-from functools import reduce
-from random import randint
+from database import db
 
 session = db.session
 running_ai = {}
 random.seed(time.time())
 
 
-# function negamax(node, depth, α, β, color) is
-#     if depth = 0 or node is a terminal node then
-#         return color × the heuristic value of node
-#
-#     childNodes := generateMoves(node)
-#     childNodes := orderMoves(childNodes)
-#     value := −∞
-#     foreach child in childNodes do
-#         value := max(value, −negamax(child, depth − 1, −β, −α, −color))
-#         α := max(α, value)
-#         if α ≥ β then
-#             break (* cut-off *)
-#     return value
+class GameNode:
+
+    def __init__(self, board: dict, piece: Piece, move_path: list, edges=None):
+        if edges is None:
+            edges = []
+        self.board = board
+        self.piece = piece
+        self.move_path = move_path
+        self.edges = edges
+
+    def add_edge(self, node):
+        self.edges.append(node)
+
+    def compute_subtree(self, depth, leaves: list):
+        new_board = self.board.copy()
+        if len(self.move_path) > 1:
+            # Definitely a jump
+            for i, move in enumerate(self.move_path):
+                move_pos = move.as_json()
+                # Make the jumps
+                new_board = checkers.try_jump(new_board, self.piece, move_pos)
+        elif len(self.move_path) == 1:
+            move = self.move_path[0]
+            # Check to see if it's an empty move or a jump
+            if move.owner_id is None:
+                # Try a regular move
+                new_board = checkers.try_move(new_board, self.piece, (move.row, move.column))
+            else:
+                # Make the single jump
+                new_board = checkers.try_jump(new_board, self.piece, (move.row, move.column))
+
+        # Now get all of the opponent's pieces for their moves
+        pieces = []
+        if self.piece.player_owned():
+            pieces = [i for i in new_board.values() if not i.player_owned()]
+        else:
+            pieces = [i for i in new_board.values() if i.player_owned()]
+
+        for piece in pieces:
+            moves = checkers.get_moves(new_board, piece)
+            for move_path in moves:
+                new_node = GameNode(new_board, piece, move_path)
+                if depth > 0:
+                    # Recursively compute subtrees up until depth
+                    new_node.compute_subtree(depth - 1, leaves)
+                else:
+                    leaves.append(self)
+                self.edges.append(new_node)
+        return self
 
 
 class AI:
-    def __init__(self, game_id: int, depth=3):
+
+    def __init__(self, game_id: int, depth=4):
         self.game_id = game_id
         self.depth = depth
-        pass
+        # Get the board to construct the tree
+        board = checkers.board_state(session, game_id)
+        # Get user to see if this game exists
+        user = session.query(User).join(GameState).where(sqla.and_(
+            GameState.id == game_id,
+            User.id != encode(b"ai").decode()
+        )).scalar()
+        if user is None:
+            raise InvalidGame("Game does not exist")
+
+        # Get whose turn it is
+        if user.turn:
+            piece = Piece(owner_id=user.id)
+        else:
+            piece = Piece(owner_id=encode(b"ai").decode())
+
+        self.leaves = []
+        self.game_tree = GameNode(board, piece, []).compute_subtree(depth, self.leaves)
 
     "This function takes a potential move as its parameter"
     "We then Calculate the heuristic of this position"
     "Returns a value for this potential move"
 
-    def get_move_heuristic(self, move, piece):
+    def get_move_heuristic(self, piece: Piece, move: list):
 
         # Will change to Zero when done for now it start random
         move_heuristic = random.randint(0, 9)
@@ -132,6 +182,17 @@ class AI:
         # print("INDEX: ", move_index)
 
         return moves, move_index, avg
+
+    def negamax(self, node, depth, alpha, beta, color):
+        if depth == 0 or len(node.edges) == 0:
+            return color * self.get_move_heuristic(node.piece, node.move_path)
+        value = -float("inf")
+        for child in node.edges:
+            value = max(value, -self.negamax(child, depth - 1, -beta, -alpha, -color))
+            alpha = max(alpha, value)
+            if alpha >= beta:
+                break
+        return value
 
     "This Function looks at the Game board and calculates heuristics"
     "For each of a players pieces and available moves to that piece"
