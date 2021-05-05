@@ -14,19 +14,55 @@ running_ai = {}
 random.seed(time.time())
 
 
-# function negamax(node, depth, α, β, color) is
-#     if depth = 0 or node is a terminal node then
-#         return color × the heuristic value of node
-#
-#     childNodes := generateMoves(node)
-#     childNodes := orderMoves(childNodes)
-#     value := −∞
-#     foreach child in childNodes do
-#         value := max(value, −negamax(child, depth − 1, −β, −α, −color))
-#         α := max(α, value)
-#         if α ≥ β then
-#             break (* cut-off *)
-#     return value
+class GameNode:
+
+    def __init__(self, board: dict, piece: Piece, move_path: list, edges=None):
+        if edges is None:
+            edges = []
+        self.board = board
+        self.piece = piece
+        self.move_path = move_path
+        self.edges = edges
+
+    def add_edge(self, node: GameNode):
+        self.edges.append(node)
+
+    def compute_subtree(self, depth=1):
+        new_board = self.board.copy()
+        if len(self.move_path) > 1:
+            # Definitely a jump
+            for i, move in enumerate(self.move_path):
+                move_pos = move.as_json()
+                # Make the jumps
+                if i != len(self.move_path) - 1:
+                    new_board = checkers.try_jump(new_board, self.piece, move_pos, False)
+                else:
+                    new_board = checkers.try_jump(new_board, self.piece, move_pos, True)
+        elif len(self.move_path) == 1:
+            move = self.move_path[0]
+            # Check to see if it's an empty move or a jump
+            if move.owner_id is None:
+                # Try a regular move
+                new_board = checkers.try_move(new_board, self.piece, move.as_json())
+            else:
+                # Make the single jump
+                new_board = checkers.try_jump(new_board, self.piece, move.as_json(), True)
+
+        # Now get all of the opponent's pieces for their moves
+        pieces = []
+        if self.piece.player_owned():
+            pieces = [i for i in new_board if not i.player_owned()]
+        else:
+            pieces = [i for i in new_board if i.player_owned()]
+
+        for piece in pieces:
+            moves = checkers.get_moves(new_board, piece)
+            for move_path in moves:
+                new_node = GameNode(new_board, piece, move_path)
+                if depth > 0:
+                    # Recursively compute subtrees up until depth
+                    new_node.compute_subtree(depth - 1)
+                self.edges.append(new_node)
 
 
 class AI:
