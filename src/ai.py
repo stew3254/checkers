@@ -1,13 +1,9 @@
-import checkers
-from database import db
-from models import *
 import random
 import time
 import checkers
-from database import db
+import sqlalchemy as sqla
 from models import *
-from functools import reduce
-from random import randint
+from database import db
 
 session = db.session
 running_ai = {}
@@ -27,7 +23,7 @@ class GameNode:
     def add_edge(self, node: GameNode):
         self.edges.append(node)
 
-    def compute_subtree(self, depth=1):
+    def compute_subtree(self, depth, leaves: list):
         new_board = self.board.copy()
         if len(self.move_path) > 1:
             # Definitely a jump
@@ -61,15 +57,36 @@ class GameNode:
                 new_node = GameNode(new_board, piece, move_path)
                 if depth > 0:
                     # Recursively compute subtrees up until depth
-                    new_node.compute_subtree(depth - 1)
+                    new_node.compute_subtree(depth - 1, leaves)
+                else:
+                    leaves.append(self)
                 self.edges.append(new_node)
+        return self
 
 
 class AI:
-    def __init__(self, game_id: int, depth=3):
+
+    def __init__(self, game_id: int, depth=4):
         self.game_id = game_id
         self.depth = depth
-        pass
+        # Get the board to construct the tree
+        board = checkers.board_state(session, game_id)
+        # Get user to see if this game exists
+        user = session.query(User).join(GameState).where(sqla.and_(
+            GameState.id == game_id,
+            User.id != encode(b"ai").decode()
+        )).scalar()
+        if user is None:
+            raise InvalidGame("Game does not exist")
+
+        # Get whose turn it is
+        if user.turn:
+            piece = Piece(owner_id=user.id)
+        else:
+            piece = Piece(owner_id=encode(b"ai").decode())
+
+        self.leaves = []
+        self.game_tree = GameNode(board, piece, []).compute_subtree(depth, self.leaves)
 
     "This function takes a potential move as its parameter"
     "We then Calculate the heuristic of this position"

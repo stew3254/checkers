@@ -6,3 +6,7 @@ class InvalidMove(Exception):
 
 class InvalidPiece(Exception):
     pass
+
+
+class InvalidGame(Exception):
+    pass
