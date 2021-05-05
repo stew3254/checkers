@@ -75,7 +75,7 @@ class AI:
     "We then Calculate the heuristic of this position"
     "Returns a value for this potential move"
 
-    def get_move_heuristic(self, move, piece):
+    def get_move_heuristic(self, piece: Piece, move: list):
 
         # Will change to Zero when done for now it start random
         move_heuristic = random.randint(0, 9)
@@ -167,6 +167,17 @@ class AI:
         print("INDEX: ", move_index)
 
         return moves, move_index, avg
+
+    def negamax(self, node, depth, alpha, beta, color):
+        if depth == 0 or len(node.edges) == 0:
+            return color * self.get_move_heuristic(node.piece, node.move_path)
+        value = -float("inf")
+        for child in node.edges:
+            value = max(value, -self.negamax(child, depth - 1, -beta, -alpha, -color))
+            alpha = max(alpha, value)
+            if alpha >= beta:
+                break
+        return value
 
     "This Function looks at the Game board and calculates heuristics"
     "For each of a players pieces and available moves to that piece"
