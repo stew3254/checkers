@@ -20,7 +20,7 @@ class GameNode:
         self.move_path = move_path
         self.edges = edges
 
-    def add_edge(self, node: GameNode):
+    def add_edge(self, node):
         self.edges.append(node)
 
     def compute_subtree(self, depth, leaves: list):
@@ -30,26 +30,23 @@ class GameNode:
             for i, move in enumerate(self.move_path):
                 move_pos = move.as_json()
                 # Make the jumps
-                if i != len(self.move_path) - 1:
-                    new_board = checkers.try_jump(new_board, self.piece, move_pos, False)
-                else:
-                    new_board = checkers.try_jump(new_board, self.piece, move_pos, True)
+                new_board = checkers.try_jump(new_board, self.piece, move_pos)
         elif len(self.move_path) == 1:
             move = self.move_path[0]
             # Check to see if it's an empty move or a jump
             if move.owner_id is None:
                 # Try a regular move
-                new_board = checkers.try_move(new_board, self.piece, move.as_json())
+                new_board = checkers.try_move(new_board, self.piece, (move.row, move.column))
             else:
                 # Make the single jump
-                new_board = checkers.try_jump(new_board, self.piece, move.as_json(), True)
+                new_board = checkers.try_jump(new_board, self.piece, (move.row, move.column))
 
         # Now get all of the opponent's pieces for their moves
         pieces = []
         if self.piece.player_owned():
-            pieces = [i for i in new_board if not i.player_owned()]
+            pieces = [i for i in new_board.values() if not i.player_owned()]
         else:
-            pieces = [i for i in new_board if i.player_owned()]
+            pieces = [i for i in new_board.values() if i.player_owned()]
 
         for piece in pieces:
             moves = checkers.get_moves(new_board, piece)
