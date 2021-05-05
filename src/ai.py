@@ -21,6 +21,7 @@ class GameNode:
         self.edges = edges
 
     def add_edge(self, node):
+        # Add the edge to the list
         self.edges.append(node)
 
     def compute_subtree(self, depth, leaves: list):
