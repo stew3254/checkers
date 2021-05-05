@@ -40,16 +40,6 @@ def show_jump(board: dict, piece: Piece, pos: Piece):
             if not exists(board, new_pos):
                 return new_pos
 
-# Provided a specific piece and position
-# This method returns a Boolean variable
-# True if the piece provided can be jumped
-# False if the piece provided can not be jumped
-def can_be_jumped(Piece):
-
-
-
-    return
-
 # Returns a list of jumps it can make, otherwise returns none
 def check_jump(board: dict, piece: Piece, pos: Piece):
     # Jump scenario
