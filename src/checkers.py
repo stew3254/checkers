@@ -239,6 +239,7 @@ def try_move(board: dict, piece: Piece, pos: tuple):
 
 def try_jump(board: dict, piece: Piece, pos: tuple):
     # Try to see if we can jump
+    pos = Piece(pos[0], pos[1])
     new_pos = show_jump(board, piece, pos)
 
     # If we can't jump say we can't
@@ -261,7 +262,7 @@ def try_jump(board: dict, piece: Piece, pos: tuple):
     # Delete the piece from the current position before moving
     del board[(piece.row, piece.column)]
     # Delete the piece that got jumped
-    del board[pos]
+    del board[(pos.row, pos.column)]
     # Update the piece position
     piece.row, piece.column = new_pos.row, new_pos.column
     # See if the piece is now a king
