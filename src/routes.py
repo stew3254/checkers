@@ -206,7 +206,7 @@ def make_jump():
         try:
             # Attempt to place the move
             db.session.commit()
-            checkers.make_jump(db.session, game_id, piece, data.get("position"), data.get("end_turn"))
+            checkers.make_jump(db.session, game_id, piece, data.get("position"))
             if not user.turn:
                 # Run the ai
                 db.session.commit()
