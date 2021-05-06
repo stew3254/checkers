@@ -1,3 +1,4 @@
+import copy
 import random
 import time
 import checkers
@@ -16,7 +17,7 @@ class GameNode:
         if edges is None:
             edges = []
         self.board = board
-        self.piece = piece
+        self.piece = copy.deepcopy(piece)
         self.move_path = move_path
         self.edges = edges
 
@@ -64,7 +65,7 @@ class GameNode:
 
 class AI:
 
-    def __init__(self, game_id: int, depth=4):
+    def __init__(self, game_id: int, depth=2):
         self.game_id = game_id
         self.depth = depth
         # Get the board to construct the tree
@@ -243,6 +244,6 @@ class AI:
 
         # See if it's a jump
         if checkers.exists(board, path[0]):
-            return checkers.make_jump(session, self.game_id, ai_pieces[piece_index], path[0].as_json(), True)
+            return checkers.make_jump(session, self.game_id, ai_pieces[piece_index], path[0].as_json())
         else:
             return checkers.make_move(session, self.game_id, ai_pieces[piece_index], path[0].as_json())
