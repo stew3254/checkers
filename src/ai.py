@@ -30,7 +30,7 @@ class GameNode:
         if len(self.move_path) > 1:
             # Definitely a jump
             for i, move in enumerate(self.move_path):
-                move_pos = move.as_json()
+                move_pos = (move.row, move.column)
                 # Make the jumps
                 new_board = checkers.try_jump(new_board, self.piece, move_pos)
         elif len(self.move_path) == 1:
@@ -95,9 +95,8 @@ class AI:
 
         # Will change to Zero when done for now it start random
         move_heuristic = random.randint(0, 9)
-        # [Empty(4, 2, non - king)]
-        # print("MOVE: ", move)
-        # print("PIECE KING? ", piece.king)
+        print("MOVE: ", move)
+        print("PIECE KING? ", piece.king)
         # print("ROW: ", move[0].row)
         # print("STATUS: ", move[0].owner_id)
         # print("COLUMN: ", move[0].column)
@@ -130,8 +129,8 @@ class AI:
                 if move[0].king:
                     move_heuristic = move_heuristic + 30
 
-
-            # print("MOVE VALUE: ", move_heuristic)
+            ##[Empty(4, 2, non - king)]
+            print("MOVE VALUE: ", move_heuristic)
 
         return move_heuristic
 
@@ -155,7 +154,7 @@ class AI:
         # contains a list of possible moves for this specific piece
         moves = checkers.get_moves(board, piece)
         # [[Empty(4, 2, non - king)], [Empty(4, 4, king)]]
-        # print("MOVES for Piece: ", moves)
+        print("MOVES for Piece: ", moves)
 
         # if there are no possible moves the heuristic for best move is 0
         if len(moves) == 0:
@@ -166,10 +165,10 @@ class AI:
         # if there are possible moves we must calculate the heuristic for each move available
         elif len(moves) > 0:
             for move in moves:
-                # print("Move: ", move)
-                # print("Move Heuristic: ", self.get_move_heuristic(move, piece))
+                print("Move: ", move)
+                print("Move Heuristic: ", self.get_move_heuristic(piece, move))
                 # returns heuristic for given move
-                piece_heuristic.append(self.get_move_heuristic(move, piece))
+                piece_heuristic.append(self.get_move_heuristic(piece, move))
 
             for idx, move in enumerate(piece_heuristic):
                 if move > highest_move:
@@ -180,8 +179,8 @@ class AI:
             avg = sum(piece_heuristic) / len(piece_heuristic)
         elif len(piece_heuristic) == 0:
             avg = sum(piece_heuristic)
-        # print("Length: ", len(moves))
-        # print("INDEX: ", move_index)
+        print("Length: ", len(moves))
+        print("INDEX: ", move_index)
 
         return moves, move_index, avg
 
@@ -202,7 +201,7 @@ class AI:
     "That has the highest heuristic for the selected piece"
 
     def evaluate(self):
-
+        print("EVALUATE::: ")
         "list of heuristics for available pieces"
         piece_heuristics = []
         # ( [int,int,int....] , int, flaot )
@@ -220,7 +219,7 @@ class AI:
             # for possible moves and Avg is heuristic for this specific piece
 
             piece_heuristics.append(self.get_best_move(piece))
-            # print("Pieces Heuristics: ", piece_heuristics)
+            print("Pieces Heuristics: ", piece_heuristics)
 
         # Loop that finds the Piece with the highest heuristic
         highest = 0
@@ -229,18 +228,18 @@ class AI:
             if piece_heuristic > highest:
                 highest = piece_heuristic
                 piece_index = idx
-        # print("Piece index: ", piece_index)
-        # print("PIECE: ", piece_heuristics[piece_index])
+        print("Piece index: ", piece_index)
+        print("PIECE: ", piece_heuristics[piece_index])
 
         # Generate tuple for piece to move contains list of possible moves
         # index for the best move and heuristic for the piece
         (moves, move_index, piece_heuristic) = piece_heuristics[piece_index]
-        # print("Piece: ", (moves, move_index, piece_heuristic))
+        print("Piece: ", (moves, move_index, piece_heuristic))
 
         # position piece needs to move to
         # Path is:  [Empty(4, 2, non-king)]
         path = moves[move_index]
-        # print("PATH: ", path)
+        print("PATH: ", path)
 
         # See if it's a jump
         if checkers.exists(board, path[0]):
