@@ -30,7 +30,7 @@ class GameNode:
         if len(self.move_path) > 1:
             # Definitely a jump
             for i, move in enumerate(self.move_path):
-                move_pos = move.as_json()
+                move_pos = (move.row, move.column)
                 # Make the jumps
                 new_board = checkers.try_jump(new_board, self.piece, move_pos)
         elif len(self.move_path) == 1:
@@ -166,9 +166,9 @@ class AI:
         elif len(moves) > 0:
             for move in moves:
                 print("Move: ", move)
-                print("Move Heuristic: ", self.get_move_heuristic(move, piece))
+                print("Move Heuristic: ", self.get_move_heuristic(piece, move))
                 # returns heuristic for given move
-                piece_heuristic.append(self.get_move_heuristic(move, piece))
+                piece_heuristic.append(self.get_move_heuristic(piece, move))
 
             for idx, move in enumerate(piece_heuristic):
                 if move > highest_move:
